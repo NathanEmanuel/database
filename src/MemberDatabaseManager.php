@@ -2,6 +2,8 @@
 
 namespace Compucie\DatabaseManagers;
 
+use Exception;
+
 class MemberDatabaseManager extends DatabaseManager
 {
     public function __construct(string $configpath)
@@ -9,13 +11,17 @@ class MemberDatabaseManager extends DatabaseManager
         parent::__construct($configpath);
     }
 
-    public function getCongressusMemberIdFromCardId(int $cardId)
+    public function getCongressusMemberIdFromCardId(int $cardId): int
     {
         $statement = $this->getClient()->prepare("SELECT `congressus_member_id` FROM `rfid` WHERE `card_id` = ?");
         $statement->bind_param("i", $cardId);
         $statement->bind_result($congressusMemberId);
         $statement->execute();
         $statement->close();
+
+        if (is_null($congressusMemberId)) {
+            throw new CardNotRegisteredException;
+        }
 
         return $congressusMemberId;
     }
@@ -31,11 +37,15 @@ class MemberDatabaseManager extends DatabaseManager
         return $count > 0;
     }
     
-    public function insertRfid(int $cardId, int $congressusMemberId, bool $isEmailConfirmed = FALSE)
+    public function insertRfid(int $cardId, int $congressusMemberId, bool $isEmailConfirmed = FALSE): void
     {
         $statement = $this->getClient()->prepare("INSERT INTO `rfid` (`card_id`, `congressus_member_id`, `is_email_confirmed`) VALUES (?, ?, ?)");
         $statement->bind_param("iii", $cardId, $congressusMemberId, intval($isEmailConfirmed));
         $statement->execute();
         $statement->close();
     }
+}
+
+class CardNotRegisteredException extends Exception
+{
 }
