@@ -20,6 +20,17 @@ class MemberDatabaseManager extends DatabaseManager
         return $congressusMemberId;
     }
 
+    public function isRfidCardRegistered(int $cardId): bool
+    {
+        $statement = $this->getClient()->prepare("SELECT COUNT(*) FROM `rfid` WHERE `card_id` = ?");
+        $statement->bind_param("i", $cardId);
+        $statement->bind_result($count);
+        $statement->execute();
+        $statement->close();
+
+        return $count > 0;
+    }
+    
     public function insertRfid(int $cardId, int $congressusMemberId, bool $isEmailConfirmed = FALSE)
     {
         $statement = $this->getClient()->prepare("INSERT INTO `rfid` (`card_id`, `congressus_member_id`, `is_email_confirmed`) VALUES (?, ?, ?)");
