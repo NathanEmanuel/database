@@ -1,0 +1,12 @@
+{
+    "name": "compucie/database-managers",
+    "description": "Library of database managers used by Newton's systems.",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Compucie\\DatabaseManagers\\": "src/"
+        }
+    },
+    "require": {}
+}
