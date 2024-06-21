@@ -19,6 +19,11 @@ abstract class DatabaseManager
 
         $this->client = new mysqli(...$config);
     }
+
+    public function getClient()
+    {
+        return $this->client;
+    }
 }
 
 class FileNotFoundException extends Exception
