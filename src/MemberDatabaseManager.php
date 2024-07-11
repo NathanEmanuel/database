@@ -11,7 +11,7 @@ class MemberDatabaseManager extends DatabaseManager
         parent::__construct($configpath);
     }
 
-    public function getCongressusMemberIdFromCardId(int $cardId): int
+    public function getCongressusMemberIdFromCardId(string $cardId): int
     {
         $statement = $this->getClient()->prepare("SELECT `congressus_member_id` FROM `rfid` WHERE `card_id` = ?");
         $statement->bind_param("i", $cardId);
@@ -26,7 +26,7 @@ class MemberDatabaseManager extends DatabaseManager
         return $congressusMemberId;
     }
 
-    public function isRfidCardRegistered(int $cardId): bool
+    public function isRfidCardRegistered(string $cardId): bool
     {
         $statement = $this->getClient()->prepare("SELECT COUNT(*) FROM `rfid` WHERE `card_id` = ?");
         $statement->bind_param("i", $cardId);
@@ -37,10 +37,10 @@ class MemberDatabaseManager extends DatabaseManager
         return $count > 0;
     }
     
-    public function insertRfid(int $cardId, int $congressusMemberId, bool $isEmailConfirmed = FALSE): void
+    public function insertRfid(string $cardId, int $congressusMemberId, bool $isEmailConfirmed = FALSE): void
     {
         $statement = $this->getClient()->prepare("INSERT INTO `rfid` (`card_id`, `congressus_member_id`, `is_email_confirmed`) VALUES (?, ?, ?)");
-        $statement->bind_param("iii", $cardId, $congressusMemberId, intval($isEmailConfirmed));
+        $statement->bind_param("sii", $cardId, $congressusMemberId, intval($isEmailConfirmed));
         $statement->execute();
         $statement->close();
     }
