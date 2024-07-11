@@ -17,6 +17,7 @@ class MemberDatabaseManager extends DatabaseManager
         $statement->bind_param("s", $cardId);
         $statement->bind_result($congressusMemberId);
         $statement->execute();
+        $statement->fetch();
         $statement->close();
 
         if (is_null($congressusMemberId)) {
@@ -32,6 +33,7 @@ class MemberDatabaseManager extends DatabaseManager
         $statement->bind_param("s", $cardId);
         $statement->bind_result($count);
         $statement->execute();
+        $statement->fetch();
         $statement->close();
 
         return $count > 0;
