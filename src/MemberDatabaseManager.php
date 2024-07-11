@@ -14,7 +14,7 @@ class MemberDatabaseManager extends DatabaseManager
     public function getCongressusMemberIdFromCardId(string $cardId): int
     {
         $statement = $this->getClient()->prepare("SELECT `congressus_member_id` FROM `rfid` WHERE `card_id` = ?");
-        $statement->bind_param("i", $cardId);
+        $statement->bind_param("s", $cardId);
         $statement->bind_result($congressusMemberId);
         $statement->execute();
         $statement->close();
@@ -29,7 +29,7 @@ class MemberDatabaseManager extends DatabaseManager
     public function isRfidCardRegistered(string $cardId): bool
     {
         $statement = $this->getClient()->prepare("SELECT COUNT(*) FROM `rfid` WHERE `card_id` = ?");
-        $statement->bind_param("i", $cardId);
+        $statement->bind_param("s", $cardId);
         $statement->bind_result($count);
         $statement->execute();
         $statement->close();
