@@ -1,5 +1,5 @@
 {
-    "name": "compucie/database-managers",
+    "name": "compucie/database",
     "description": "Library of database managers used by Newton's systems.",
     "type": "library",
     "license": "MIT",
