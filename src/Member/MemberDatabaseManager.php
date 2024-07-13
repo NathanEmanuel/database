@@ -1,7 +1,8 @@
 <?php
 
-namespace Compucie\DatabaseManagers;
+namespace Compucie\Database\Member;
 
+use Compucie\Database\DatabaseManager;
 use Exception;
 
 class MemberDatabaseManager extends DatabaseManager

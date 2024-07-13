@@ -1,6 +1,6 @@
 <?php
 
-namespace Compucie\DatabaseManagers;
+namespace Compucie\Database;
 
 use Exception;
 use mysqli;
