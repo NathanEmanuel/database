@@ -4,24 +4,14 @@ namespace Compucie\DatabaseManagers;
 
 use Compucie\DatabaseManagers\DatabaseManager;
 use DateTime;
-use Exception;
-use mysqli;
 
 class PollDatabaseManager extends DatabaseManager
 {
     const SQL_DATETIME_FORMAT = "Y-m-d H:i:s";
 
-    private mysqli $client;
-
     public function __construct(string $configpath)
     {
-
-        if (!file_exists($configpath)) {
-            throw new FileNotFoundException();
-        }
-        $config = parse_ini_file($configpath);
-
-        $this->client = new mysqli(...$config);
+        parent::__construct($configpath);
     }
 
     /**
@@ -29,7 +19,7 @@ class PollDatabaseManager extends DatabaseManager
      */
     public function getActivePollIds(): array
     {
-        $statement = $this->client->prepare("SELECT `poll_id` FROM `polls` WHERE `expires_at` > UTC_TIMESTAMP() OR `expires_at` IS NULL");
+        $statement = $this->getClient()->prepare("SELECT `poll_id` FROM `polls` WHERE `expires_at` > UTC_TIMESTAMP() OR `expires_at` IS NULL");
         $statement->execute();
         $statement->bind_result($activePollId);
 
@@ -60,7 +50,7 @@ class PollDatabaseManager extends DatabaseManager
      */
     public function getLatestPolls(int $max): array
     {
-        $statement = $this->client->prepare("SELECT `poll_id` FROM `polls` ORDER BY `poll_id` DESC LIMIT ?");
+        $statement = $this->getClient()->prepare("SELECT `poll_id` FROM `polls` ORDER BY `poll_id` DESC LIMIT ?");
         $statement->bind_param("i", $max);
         $statement->bind_result($poll_id);
         $statement->execute();
@@ -81,7 +71,7 @@ class PollDatabaseManager extends DatabaseManager
 
     public function hasUserVoted(int $pollId, int $userId): bool
     {
-        $statement = $this->client->prepare("SELECT COUNT(*) FROM `votes` WHERE `poll_id` = ? AND `user_id` = ?");
+        $statement = $this->getClient()->prepare("SELECT COUNT(*) FROM `votes` WHERE `poll_id` = ? AND `user_id` = ?");
         $statement->bind_param("ii", $pollId, $userId);
         $statement->execute();
         $statement->bind_result($voteCount);
@@ -107,7 +97,7 @@ class PollDatabaseManager extends DatabaseManager
     }
 
     public function addPoll(string $question, Datetime $expiry) {
-        $statement = $this->client->prepare("INSERT INTO `polls` (`question`, `expires_at`) VALUES (?, ?)");
+        $statement = $this->getClient()->prepare("INSERT INTO `polls` (`question`, `expires_at`) VALUES (?, ?)");
         $expiryString = $expiry->format(self::SQL_DATETIME_FORMAT);
         $statement->bind_param("ss", $question, $expiryString);
         $statement->execute();
@@ -116,7 +106,7 @@ class PollDatabaseManager extends DatabaseManager
 
     public function addAnswer(int $pollId, string $text): void
     {
-        $statement = $this->client->prepare("INSERT INTO `answers` (`poll_id`, `text`) VALUES (?, ?)");
+        $statement = $this->getClient()->prepare("INSERT INTO `answers` (`poll_id`, `text`) VALUES (?, ?)");
         $statement->bind_param("is", $pollId, $text);
         $isSuccesful = $statement->execute();
         $statement->close();
@@ -132,12 +122,12 @@ class PollDatabaseManager extends DatabaseManager
      */
     public function addVote(int $pollId, int $userId, int $answerId): void
     {
-        $statement = $this->client->prepare("INSERT INTO `votes` (`poll_id`, `user_id`, `answer_id`) VALUES (?, ?, ?)");
+        $statement = $this->getClient()->prepare("INSERT INTO `votes` (`poll_id`, `user_id`, `answer_id`) VALUES (?, ?, ?)");
         $statement->bind_param("iii", $pollId, $userId, $answerId);
 
         $isSuccesful = $statement->execute();
         if (!$isSuccesful) {
-            throw new VoteAddException();
+            throw new CouldNotInsertException;
         }
     }
 
@@ -150,7 +140,7 @@ class PollDatabaseManager extends DatabaseManager
      */
     public function getPoll(int $pollId): Poll
     {
-        $statement = $this->client->prepare("SELECT `question`, `published_at`, `expires_at` FROM `polls` WHERE `poll_id` = ?");
+        $statement = $this->getClient()->prepare("SELECT `question`, `published_at`, `expires_at` FROM `polls` WHERE `poll_id` = ?");
         $statement->bind_param("i", $pollId);
         $statement->bind_result($question, $published, $expiry);
         $statement->execute();
@@ -170,7 +160,7 @@ class PollDatabaseManager extends DatabaseManager
      */
     private function getAnswers(int $pollId): Answers
     {
-        $statement = $this->client->prepare("SELECT `answer_id`, `text` FROM `answers` WHERE `poll_id` = ?");
+        $statement = $this->getClient()->prepare("SELECT `answer_id`, `text` FROM `answers` WHERE `poll_id` = ?");
         $statement->bind_param("i", $pollId);
         $statement->bind_result($id, $answer);
         $statement->execute();
@@ -195,7 +185,7 @@ class PollDatabaseManager extends DatabaseManager
      */
     private function getVoteCounts(int $pollId, Answers $answers): Answers
     {
-        $statement = $this->client->prepare("SELECT COUNT(*) FROM `votes` WHERE `poll_id` = ? AND `answer_id` = ?");
+        $statement = $this->getClient()->prepare("SELECT COUNT(*) FROM `votes` WHERE `poll_id` = ? AND `answer_id` = ?");
         $statement->bind_param("ii", $pollId, $answerId);
         $statement->bind_result($voteCount);
 
@@ -212,21 +202,12 @@ class PollDatabaseManager extends DatabaseManager
 
     private function getPollVoteCount(int $pollId): int
     {
-        $statement = $this->client->prepare("SELECT COUNT(*) FROM `votes` WHERE `poll_id` = ?");
+        $statement = $this->getClient()->prepare("SELECT COUNT(*) FROM `votes` WHERE `poll_id` = ?");
         $statement->bind_param("i", $pollId);
         $statement->bind_result($voteCount);
         $statement->execute();
         $statement->fetch();
         $statement->close();
         return $voteCount;
-    }
-}
-
-
-class VoteAddException extends Exception
-{
-    public function __construct()
-    {
-        parent::__construct("Vote could not be cast!");
     }
 }
