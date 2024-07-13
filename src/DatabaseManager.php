@@ -9,14 +9,8 @@ abstract class DatabaseManager
 {
     private mysqli $client;
 
-    public function __construct(string $configpath)
+    public function __construct(array $config)
     {
-
-        if (!file_exists($configpath)) {
-            throw new FileNotFoundException();
-        }
-        $config = parse_ini_file($configpath);
-
         $this->client = new mysqli(...$config);
     }
 

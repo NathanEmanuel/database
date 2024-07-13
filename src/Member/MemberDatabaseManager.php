@@ -7,9 +7,9 @@ use Exception;
 
 class MemberDatabaseManager extends DatabaseManager
 {
-    public function __construct(string $configpath)
+    public function __construct(array $config)
     {
-        parent::__construct($configpath);
+        parent::__construct($config);
     }
 
     public function getCongressusMemberIdFromCardId(string $cardId): int
