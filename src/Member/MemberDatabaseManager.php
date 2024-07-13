@@ -47,6 +47,14 @@ class MemberDatabaseManager extends DatabaseManager
         $statement->execute();
         $statement->close();
     }
+
+    public function deleteMembersEntries(int $congressusMemberId): void
+    {
+        $statement = $this->getClient()->prepare("DELETE FROM `rfid` WHERE `congressus_member_id` = ?");
+        $statement->bind_param("i", intval($congressusMemberId));
+        $statement->execute();
+        $statement->close();
+    }
 }
 
 class CardNotRegisteredException extends Exception
