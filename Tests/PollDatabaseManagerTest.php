@@ -2,9 +2,9 @@
 
 namespace Compucie\DatabaseManager\Tests;
 
-use Compucie\DatabaseManagers\PollDatabaseManager;
+use Compucie\DatabaseManagers\Poll\PollDatabaseManager;
 use PHPUnit\Framework\TestCase;
-#require_once('../vendor/autoload.php');
+
 final class PollDatabaseManagerTest extends TestCase
 {
 
@@ -12,12 +12,12 @@ final class PollDatabaseManagerTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->dbm = new PollDatabaseManager("config/test.ini");
+        $this->dbm = new PollDatabaseManager("{$_SERVER['DOCUMENT_ROOT']}/config/test.ini");
     }
 
     public function testGetActivePolls(): void
     {
-        
+
         $polls = $this->dbm->getActivePolls();
         $this->assertSame(1, $polls[0]->getId());
     }

@@ -1,9 +1,8 @@
 <?php
 
-namespace Compucie\DatabaseManagers;
+namespace Compucie\Database\Poll\Model;
 
-use Compucie\DatabaseManagers\DatabaseManager;
-class Answers extends DatabaseManager
+class Answers
 {
 
     public function __construct(

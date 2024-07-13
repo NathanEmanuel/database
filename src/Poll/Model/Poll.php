@@ -1,14 +1,13 @@
 <?php
 
-namespace Compucie\DatabaseManagers;
+namespace Compucie\Database\Poll\Model;
 
-use Compucie\DatabaseManagers\DatabaseManager;
 use DateTime;
 
 /**
  * Dataclass
  */
-class Poll extends DatabaseManager
+class Poll
 {
     public function __construct(
         private int $id,

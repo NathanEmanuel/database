@@ -1,8 +1,11 @@
 <?php
 
-namespace Compucie\DatabaseManagers;
+namespace Compucie\Database\Poll;
 
-use Compucie\DatabaseManagers\DatabaseManager;
+use Compucie\Database\CouldNotInsertException;
+use Compucie\Database\DatabaseManager;
+use Compucie\Database\Poll\Model\Answers;
+use Compucie\Database\Poll\Model\Poll;
 use DateTime;
 
 class PollDatabaseManager extends DatabaseManager
