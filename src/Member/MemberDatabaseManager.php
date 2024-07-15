@@ -12,6 +12,20 @@ class MemberDatabaseManager extends DatabaseManager
         parent::__construct($config);
     }
 
+    public function createTables()
+    {
+        $statement = $this->getClient()->prepare(
+            "CREATE TABLE `rfid` (
+                `card_id` INT NOT NULL AUTO_INCREMENT,
+                `congressus_member_id` INT NOT NULL,
+                `is_email_confirmed` BOOLEAN NOT NULL DEFAULT FALSE,
+                PRIMARY KEY (`card_id`)
+            );"
+        );
+        $statement->execute();
+        $statement->close();
+    }
+
     /**
      * Return the Congressus member ID of the member who registered the given card.
      * @param   string      $cardId     ID of the registered card
