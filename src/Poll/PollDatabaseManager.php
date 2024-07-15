@@ -34,7 +34,7 @@ class PollDatabaseManager extends DatabaseManager
         $statement->execute();
         $statement->close();
 
-        $statement->$this->getClient()->prepare(
+        $statement = $this->getClient()->prepare(
             "CREATE TABLE `options` (
                 `option_id` INT NOT NULL AUTO_INCREMENT,
                 `poll_id` INT NOT NULL,
@@ -46,7 +46,7 @@ class PollDatabaseManager extends DatabaseManager
         $statement->execute();
         $statement->close();
 
-        $statement->$this->getClient()->prepare(
+        $statement = $this->getClient()->prepare(
             "CREATE TABLE `votes` (
                 `vote_id` INT NOT NULL AUTO_INCREMENT,
                 `poll_id` INT NOT NULL,
