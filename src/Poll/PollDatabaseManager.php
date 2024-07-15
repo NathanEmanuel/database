@@ -16,10 +16,6 @@ class PollDatabaseManager extends DatabaseManager
         parent::__construct($config);
     }
 
-    /**
-     * Create all tables used by this database manager.
-     * @throws  mysqli_sql_exception
-     */
     public function createTables(): void
     {
         $statement = $this->getClient()->prepare(

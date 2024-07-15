@@ -8,13 +8,19 @@ abstract class DatabaseManager
 {
     private mysqli $client;
 
-    public function __construct(array $config)
+    protected function __construct(array $config)
     {
         $this->client = new mysqli(...$config);
     }
 
-    public function getClient()
+    protected function getClient()
     {
         return $this->client;
     }
+
+    /**
+     * Create all tables used by this database manager.
+     * @throws  mysqli_sql_exception
+     */
+    abstract public function createTables();
 }
