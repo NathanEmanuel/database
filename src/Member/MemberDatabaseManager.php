@@ -12,6 +12,13 @@ class MemberDatabaseManager extends DatabaseManager
         parent::__construct($config);
     }
 
+    /**
+     * Return the Congressus member ID of the member who registered the given card.
+     * @param   string      $cardId     ID of the registered card
+     * @return  int                     Congressus member ID
+     * @throws  mysqli_sql_exception
+     * @throws  CardNotRegisteredException
+     */
     public function getCongressusMemberIdFromCardId(string $cardId): int
     {
         $statement = $this->getClient()->prepare("SELECT `congressus_member_id` FROM `rfid` WHERE `card_id` = ?");
@@ -28,6 +35,12 @@ class MemberDatabaseManager extends DatabaseManager
         return $congressusMemberId;
     }
 
+    /**
+     * Return whether the given card is registered.
+     * @param   string      $cardId     ID of the card
+     * @return  bool                    Whether the card is registered
+     * @throws  mysqli_sql_exception
+     */
     public function isRfidCardRegistered(string $cardId): bool
     {
         $statement = $this->getClient()->prepare("SELECT COUNT(*) FROM `rfid` WHERE `card_id` = ?");
@@ -40,6 +53,13 @@ class MemberDatabaseManager extends DatabaseManager
         return $count > 0;
     }
     
+    /**
+     * Register a card by inserting the card ID and associated member ID.
+     * @param   string      $cardId                 ID of the card
+     * @param   int         $congressusMemberId     Congressus member ID
+     * @param   bool        $isEmailConfirmed       Whether the member confirmed their registration
+     * @throws  mysqli_sql_exception
+     */
     public function insertRfid(string $cardId, int $congressusMemberId, bool $isEmailConfirmed = FALSE): void
     {
         $statement = $this->getClient()->prepare("INSERT INTO `rfid` (`card_id`, `congressus_member_id`, `is_email_confirmed`) VALUES (?, ?, ?)");
@@ -48,6 +68,11 @@ class MemberDatabaseManager extends DatabaseManager
         $statement->close();
     }
 
+    /**
+     * Delete a member's card registrations.
+     * @param   int     $congressusMemberId     Member whose registrations to delete
+     * @throws  mysqli_sql_exception
+     */
     public function deleteMembersEntries(int $congressusMemberId): void
     {
         $statement = $this->getClient()->prepare("DELETE FROM `rfid` WHERE `congressus_member_id` = ?");
