@@ -17,6 +17,48 @@ class PollDatabaseManager extends DatabaseManager
         parent::__construct($config);
     }
 
+    public function createTables(): void
+    {
+        $statement = $this->getClient()->prepare(
+            "CREATE TABLE `polls` (
+                `poll_id` INT NOT NULL AUTO_INCREMENT,
+                `question` VARCHAR(255) NOT NULL,
+                `published_at` DATETIME NOT NULL DEFAULT UTC_TIMESTAMP(),
+                `expires_at` DATETIME DEFAULT NULL,
+                PRIMARY KEY (poll_id)
+            );"
+        );
+        $statement->execute();
+        $statement->close();
+
+        $statement->$this->getClient()->prepare(
+            "CREATE TABLE `answers` (
+                `answer_id` INT NOT NULL AUTO_INCREMENT,
+                `poll_id` INT NOT NULL,
+                `text` VARCHAR(4095) NOT NULL,
+                PRIMARY KEY (answer_id),
+                FOREIGN KEY (poll_id) REFERENCES polls(poll_id)
+            );"
+        );
+        $statement->execute();
+        $statement->close();
+
+        $statement->$this->getClient()->prepare(
+            "CREATE TABLE `votes` (
+                `vote_id` INT NOT NULL AUTO_INCREMENT,
+                `poll_id` INT NOT NULL,
+                `answer_id` INT NOT NULL,
+                `user_id` INT NOT NULL,
+                `published_at` DATETIME NOT NULL DEFAULT UTC_TIMESTAMP(),
+                PRIMARY KEY (vote_id),
+                FOREIGN KEY (poll_id) REFERENCES polls(poll_id),
+                FOREIGN KEY (answer_id) REFERENCES answers(answer_id)
+            );"
+        );
+        $statement->execute();
+        $statement->close();
+    }
+
     /**
      * @return  int[]
      */
@@ -62,7 +104,7 @@ class PollDatabaseManager extends DatabaseManager
         while ($statement->fetch()) {
             $latestPollIds[] = $poll_id;
         }
-        
+
         $statement->close();
 
         $latestPolls = array();
@@ -99,7 +141,8 @@ class PollDatabaseManager extends DatabaseManager
         return $votablePollIds;
     }
 
-    public function addPoll(string $question, Datetime $expiry) {
+    public function addPoll(string $question, Datetime $expiry)
+    {
         $statement = $this->getClient()->prepare("INSERT INTO `polls` (`question`, `expires_at`) VALUES (?, ?)");
         $expiryString = $expiry->format(self::SQL_DATETIME_FORMAT);
         $statement->bind_param("ss", $question, $expiryString);
@@ -149,7 +192,7 @@ class PollDatabaseManager extends DatabaseManager
         $statement->execute();
         $statement->fetch();
         $statement->close();
-    
+
         $answers = $this->getAnswers($pollId);
         $answers = $this->getVoteCounts($pollId, $answers);
         $pollVoteCount = $this->getPollVoteCount($pollId);
