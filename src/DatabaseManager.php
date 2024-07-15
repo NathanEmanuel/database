@@ -27,3 +27,7 @@ class FileNotFoundException extends Exception
 class CouldNotInsertException extends Exception
 {
 }
+
+class SqlExecutionFailedException extends Exception
+{
+}
