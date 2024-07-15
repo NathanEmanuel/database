@@ -2,7 +2,6 @@
 
 namespace Compucie\Database;
 
-use Exception;
 use mysqli;
 
 abstract class DatabaseManager
@@ -18,16 +17,4 @@ abstract class DatabaseManager
     {
         return $this->client;
     }
-}
-
-class FileNotFoundException extends Exception
-{
-}
-
-class CouldNotInsertException extends Exception
-{
-}
-
-class SqlExecutionFailedException extends Exception
-{
 }
