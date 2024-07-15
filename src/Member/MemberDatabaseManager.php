@@ -16,7 +16,7 @@ class MemberDatabaseManager extends DatabaseManager
     {
         $statement = $this->getClient()->prepare(
             "CREATE TABLE `rfid` (
-                `card_id` INT NOT NULL AUTO_INCREMENT,
+                `card_id` VARCHAR(14) NOT NULL,
                 `congressus_member_id` INT NOT NULL,
                 `is_email_confirmed` BOOLEAN NOT NULL DEFAULT FALSE,
                 PRIMARY KEY (`card_id`)
