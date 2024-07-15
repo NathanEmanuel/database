@@ -12,9 +12,9 @@ class Poll
     public function __construct(
         private int $id,
         private string $question,
-        private DateTime $published,
-        private DateTime $expiry,
-        private Answers $answers,
+        private DateTime $publishedAt,
+        private DateTime $expiresAt,
+        private Options $options,
         private int $voteCount,
     ) {
     }
@@ -29,19 +29,19 @@ class Poll
         return $this->question;
     }
 
-    public function getPublished(): DateTime
+    public function getPublishedAt(): DateTime
     {
-        return $this->published;
+        return $this->publishedAt;
     }
 
-    public function getExpiry(): DateTime
+    public function getExpiresAt(): DateTime
     {
-        return $this->expiry;
+        return $this->expiresAt;
     }
 
-    public function getAnswers(): Answers
+    public function getOptions(): Options
     {
-        return $this->answers;
+        return $this->options;
     }
 
     public function getVoteCount(): int

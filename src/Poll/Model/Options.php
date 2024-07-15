@@ -2,7 +2,7 @@
 
 namespace Compucie\Database\Poll\Model;
 
-class Answers
+class Options
 {
 
     public function __construct(
