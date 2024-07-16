@@ -278,6 +278,7 @@ class PollDatabaseManager extends DatabaseManager
         $statement = $this->getClient()->prepare("SELECT COUNT(*) FROM `votes` WHERE `poll_id` = ?");
         $statement->bind_param("i", $pollId);
         $statement->bind_result($voteCount);
+        $statement->execute();
         $statement->fetch();
         $statement->close();
 
