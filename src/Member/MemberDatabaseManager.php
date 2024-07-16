@@ -87,7 +87,7 @@ class MemberDatabaseManager extends DatabaseManager
      * @param   int     $congressusMemberId     Member whose registrations to delete
      * @throws  mysqli_sql_exception
      */
-    public function deleteMembersEntries(int $congressusMemberId): void
+    public function deleteMembersRfidRegistrations(int $congressusMemberId): void
     {
         $statement = $this->getClient()->prepare("DELETE FROM `rfid` WHERE `congressus_member_id` = ?");
         $statement->bind_param("i", intval($congressusMemberId));
