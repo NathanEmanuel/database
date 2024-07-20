@@ -23,6 +23,25 @@ class PinDatabaseManager extends DatabaseManager
     }
 
     /**
+     * Return array of IDs of currently pinned events.
+     * @return  int[]   $eventIds
+     * @throws  mysqli_sql_exception
+     */
+    public function getCurrentlyPinnedEventIds(): array
+    {
+        $statement = $this->getClient()->prepare("SELECT `event_id` FROM events WHERE (NOW() BETWEEN start_at AND end_at) OR (NOW() > start_at AND end_at IS NULL);");
+        $statement->bind_result($eventId);
+        $statement->execute();
+        $eventIds = array();
+        while ($statement->fetch()) {
+            $eventIds[] = $eventId;
+        }
+        $statement->close();
+
+        return $eventIds;
+    }
+
+    /**
      * Insert an event pin.
      * @throws  mysqli_sql_exception
      */

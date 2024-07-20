@@ -36,4 +36,10 @@ class PinDatabaseManagerTest extends TestCase
         $this->getDatabaseManager()->updateEventPin(2, endAt: new DateTime);
         $this->getDatabaseManager()->updateEventPin(3, new DateTime, new DateTime);
     }
+
+    function testGetCurrentlyPinnedEventIds(): void
+    {
+        $eventIds = $this->getDatabaseManager()->getCurrentlyPinnedEventIds();
+        $this->assertSame(3, count($eventIds));
+    }
 }
