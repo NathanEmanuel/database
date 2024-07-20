@@ -9,8 +9,6 @@ use DateTime;
 
 class PollDatabaseManager extends DatabaseManager
 {
-    const SQL_DATETIME_FORMAT = "Y-m-d H:i:s";
-
     public function __construct(array $config)
     {
         parent::__construct($config);

@@ -9,6 +9,11 @@
             "Compucie\\Database\\": "src/"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "Compucie\\DatabaseTest\\": "tests/"
+        }
+    },
     "require-dev": {
         "phpunit/phpunit": "^11.2"
     }

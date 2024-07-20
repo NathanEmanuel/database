@@ -6,9 +6,11 @@ use mysqli;
 
 abstract class DatabaseManager
 {
+    const SQL_DATETIME_FORMAT = "Y-m-d H:i:s";
+
     private mysqli $client;
 
-    protected function __construct(array $config)
+    public function __construct(array $config)
     {
         $this->client = new mysqli(...$config);
     }
