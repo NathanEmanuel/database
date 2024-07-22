@@ -63,7 +63,7 @@ class PollDatabaseManager extends DatabaseManager
      */
     public function getActivePollIds(): array
     {
-        $statement = $this->getClient()->prepare("SELECT `poll_id` FROM `polls` WHERE `expires_at` > UTC_TIMESTAMP() OR `expires_at` IS NULL");
+        $statement = $this->getClient()->prepare("SELECT `poll_id` FROM `polls` WHERE `expires_at` > NOW() OR `expires_at` IS NULL");
         $statement->bind_result($activePollId);
         $statement->execute();
 
