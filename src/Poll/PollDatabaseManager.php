@@ -90,6 +90,17 @@ class PollDatabaseManager extends DatabaseManager
         return $activePolls;
     }
 
+    public function getMostRecentlyExpiredPoll(): Poll
+    {
+        $statement = $this->getClient()->prepare("SELECT `poll_id` FROM `polls` WHERE NOW() > `expires_at` ORDER BY `expires_at` DESC LIMIT 1");
+        $statement->bind_result($pollId);
+        $statement->execute();
+        $statement->fetch();
+        $statement->close();
+
+        return self::getPoll($pollId);
+    }
+
     /**
      * Return the latest polls. The amount is limited by the given value.
      * @param   int     $max    The maximum amount of polls to get.
