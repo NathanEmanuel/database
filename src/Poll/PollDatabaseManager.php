@@ -306,4 +306,17 @@ class PollDatabaseManager extends DatabaseManager
 
         return $voteCount;
     }
+
+    /**
+     * Expire a poll immediately.
+     * @param   int     $pollId     The ID of the poll to expire.
+     * @throws  mysqli_sql_exception
+     */
+    public function expirePoll(int $pollId): void
+    {
+        $statement = $this->getClient()->prepare("UPDATE `polls` SET `expires_at` = NOW() WHERE `poll_id` = ?");
+        $statement->bind_param("i", $pollId);
+        $statement->execute();
+        $statement->close();
+    }
 }
