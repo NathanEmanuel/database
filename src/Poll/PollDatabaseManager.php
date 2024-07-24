@@ -194,6 +194,19 @@ class PollDatabaseManager extends DatabaseManager
     }
 
     /**
+     * Delete an option.
+     * @param   int     $optionId   The ID of the option.
+     * @throws  mysqli_sql_exception
+     */
+    public function deleteOption(int $optionId): void
+    {
+        $statement = $this->getClient()->prepare("DELETE FROM `options` WHERE `option_id` = ?");
+        $statement->bind_param("i", $optionId);
+        $statement->execute();
+        $statement->close();
+    }
+
+    /**
      * Add a vote.
      * @param   int     $pollId     ID of the poll on which was voted.
      * @param   int     $usedId     ID of the user who voted.
