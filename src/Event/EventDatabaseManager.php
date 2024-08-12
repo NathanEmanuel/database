@@ -7,7 +7,7 @@ use DateTime;
 
 class EventDatabaseManager extends DatabaseManager
 {
-    public function createTables()
+    public function createTables(): void
     {
         $statement = $this->getClient()->prepare(
             "CREATE TABLE `pins` (
