@@ -9,11 +9,6 @@ use DateTime;
 
 class PollDatabaseManager extends DatabaseManager
 {
-    public function __construct(array $config)
-    {
-        parent::__construct($config);
-    }
-
     public function createTables(): void
     {
         $statement = $this->getClient()->prepare(
