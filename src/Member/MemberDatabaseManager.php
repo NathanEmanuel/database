@@ -7,11 +7,6 @@ use Exception;
 
 class MemberDatabaseManager extends DatabaseManager
 {
-    public function __construct(array $config)
-    {
-        parent::__construct($config);
-    }
-
     public function createTables()
     {
         $statement = $this->getClient()->prepare(
