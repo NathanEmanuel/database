@@ -15,7 +15,7 @@ abstract class DatabaseManager
         $this->client = new mysqli(...$config);
     }
 
-    protected function getClient()
+    protected function getClient(): mysqli
     {
         return $this->client;
     }
@@ -24,5 +24,5 @@ abstract class DatabaseManager
      * Create all tables used by this database manager.
      * @throws  mysqli_sql_exception
      */
-    abstract public function createTables();
+    abstract public function createTables(): void;
 }
