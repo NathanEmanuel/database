@@ -2,8 +2,12 @@
 
 namespace Compucie\Database\Sale;
 
+use mysqli;
+
 trait PurchasesTableManager
 {
+    protected abstract function getClient(): mysqli;
+
     protected function createPurchasesTable(): void
     {
         $statement = $this->getClient()->prepare(
