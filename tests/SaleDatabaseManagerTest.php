@@ -5,6 +5,8 @@ namespace Compucie\DatabaseTest;
 use Compucie\Database\Sale\SaleDatabaseManager;
 use PHPUnit\Framework\TestCase;
 
+use function PHPUnit\Framework\assertGreaterThan;
+
 class SaleDatabaseManagerTest extends TestCase
 {
     private SaleDatabaseManager $dbm;
@@ -23,5 +25,11 @@ class SaleDatabaseManagerTest extends TestCase
     public function testCreateTables(): void
     {
         $this->getDbm()->createTables();
+    }
+
+    public function testInsertPurchase(): void
+    {
+        $purchaseId = $this->getDbm()->insertPurchase();
+        assertGreaterThan(0, $purchaseId);
     }
 }

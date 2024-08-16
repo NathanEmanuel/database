@@ -17,4 +17,16 @@ trait PurchasesTableManager
         $statement->execute();
         $statement->close();
     }
+
+    public function insertPurchase(): int
+    {
+        $statement = $this->getClient()->prepare("INSERT INTO `purchases` () VALUES ();");
+        $statement->execute();
+        $statement = $this->getClient()->prepare("SELECT LAST_INSERT_ID();");
+        $statement->bind_result($purchaseId);
+        $statement->execute();
+        $statement->fetch();
+        $statement->close();
+        return $purchaseId;
+    }
 }
