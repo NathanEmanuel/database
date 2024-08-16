@@ -32,4 +32,14 @@ class SaleDatabaseManagerTest extends TestCase
         $purchaseId = $this->getDbm()->insertPurchase();
         assertGreaterThan(0, $purchaseId);
     }
+
+    public function testInsertPurchaseItem(): void
+    {
+        $dbm = $this->getDbm();
+        $dbm->insertPurchaseItem(1, 1);
+        $dbm->insertPurchaseItem(1, 1, 2);
+        $dbm->insertPurchaseItem(1, 1, 3, "3 Cookies");
+        $dbm->insertPurchaseItem(1, 1, 4, unitPrice: 0.69);
+        $dbm->insertPurchaseItem(1, 1, 5, "3 Cookies", 0.69);
+    }
 }

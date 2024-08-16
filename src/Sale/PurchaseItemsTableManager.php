@@ -25,4 +25,12 @@ trait PurchaseItemsTableManager
         $statement->execute();
         $statement->close();
     }
+
+    public function insertPurchaseItem(int $purchaseId, int $productId, int $quantity = 1, ?string $name = null, ?float $unitPrice = null): void
+    {
+        $statement = $this->getClient()->prepare("INSERT INTO `purchase_items` (`purchase_id`, `product_id`, `quantity`, `name`, `unit_price`) VALUES (?, ?, ?, ?, ?);");
+        $statement->bind_param("iiisd", $purchaseId, $productId, $quantity, $name, $unitPrice);
+        $statement->execute();
+        $statement->close();
+    }
 }
