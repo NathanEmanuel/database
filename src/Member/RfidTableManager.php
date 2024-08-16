@@ -73,7 +73,7 @@ trait RfidTableManager
     public function insertRfid(string $cardId, int $congressusMemberId, bool $isEmailConfirmed = FALSE): void
     {
         $statement = $this->getClient()->prepare("INSERT INTO `rfid` (`card_id`, `congressus_member_id`, `is_email_confirmed`) VALUES (?, ?, ?)");
-        $statement->bind_param("sii", $cardId, $congressusMemberId, intval($isEmailConfirmed));
+        $statement->bind_param("sii", $cardId, $congressusMemberId, $isEmailConfirmed);
         $statement->execute();
         $statement->close();
     }
@@ -86,7 +86,7 @@ trait RfidTableManager
     public function deleteMembersRfidRegistrations(int $congressusMemberId): void
     {
         $statement = $this->getClient()->prepare("DELETE FROM `rfid` WHERE `congressus_member_id` = ?");
-        $statement->bind_param("i", intval($congressusMemberId));
+        $statement->bind_param("i", $congressusMemberId);
         $statement->execute();
         $statement->close();
     }
