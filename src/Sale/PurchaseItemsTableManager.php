@@ -38,9 +38,10 @@ trait PurchaseItemsTableManager
     /**
      * Return the product sales data for the given products in the given weeks of the given year.
      *
-     * @param  int[]            $productIds     product IDs
-     * @param  int[]            $weeks          week numbers
-     * @return Model\ProductSales[]
+     * @param   int[]   $productIds     Array of product IDs.
+     * @param   int[]   $weeks          Array of week numbers.
+     * @param   int     $year           [Optional] The year in which the week numbers apply.
+     * @return  Model\ProductSales[]
      */
     public function selectProductSalesByWeek(array $productIds, array $weeks, int $year = null): array
     {
