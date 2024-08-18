@@ -6,6 +6,7 @@ use Compucie\Database\Sale\SaleDatabaseManager;
 use PHPUnit\Framework\TestCase;
 
 use function PHPUnit\Framework\assertGreaterThan;
+use function PHPUnit\Framework\assertSame;
 
 class SaleDatabaseManagerTest extends TestCase
 {
@@ -41,5 +42,17 @@ class SaleDatabaseManagerTest extends TestCase
         $dbm->insertPurchaseItem(1, 1, 3, "3 Cookies");
         $dbm->insertPurchaseItem(1, 1, 4, unitPrice: 0.69);
         $dbm->insertPurchaseItem(1, 1, 5, "3 Cookies", 0.69);
+    }
+
+    public function testSelectProductSalesByWeek(): void
+    {
+        $productId = 1;
+        $week = 33;
+        $dbm = $this->getDbm();
+        $productSales = $dbm->selectProductSalesByWeek([$productId], [$week]);
+        assertSame($productId, $productSales[$productId]->getProductId());
+        assertSame(15, $productSales[$productId]->getQuantity($week));
+        assertSame("3 Cookies", $productSales[$productId]->getName($week));
+        assertSame(69, $productSales[$productId]->getUnitPrice($week));
     }
 }

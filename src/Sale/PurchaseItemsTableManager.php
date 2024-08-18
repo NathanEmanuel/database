@@ -2,6 +2,7 @@
 
 namespace Compucie\Database\Sale;
 
+use Compucie\Database\Sale\Model\ProductSales;
 use mysqli;
 
 trait PurchaseItemsTableManager
@@ -32,5 +33,45 @@ trait PurchaseItemsTableManager
         $statement->bind_param("iiisd", $purchaseId, $productId, $quantity, $name, $unitPrice);
         $statement->execute();
         $statement->close();
+    }
+
+    /**
+     * Return the product sales data for the given products in the given weeks of the given year.
+     *
+     * @param  int[]            $productIds     product IDs
+     * @param  int[]            $weeks          week numbers
+     * @return Model\ProductSales[]
+     */
+    public function selectProductSalesByWeek(array $productIds, array $weeks, int $year = null): array
+    {
+        $statement = $this->getClient()->prepare("SELECT SUM(`quantity`), `name`, `unit_price` FROM `purchase_items` WHERE `product_id` = ? AND `purchase_id` IN (SELECT `purchase_id` FROM `purchases` WHERE `purchased_at` BETWEEN ? AND ?);");
+        $productSalesArray = array();
+        foreach ($productIds as $productId) {
+            $productSales = new ProductSales($productId);
+            $productSalesArray[$productId] = $productSales;
+            foreach ($weeks as $week) {
+                $weekDates = self::getWeekDates($week, $year);
+                $statement->bind_param("iss", $productId, $weekDates['start'], $weekDates['end']);
+                $statement->bind_result($quantity, $name, $unitPrice);
+                $statement->execute();
+                $statement->fetch();
+                $productSales->setQuantity($week, $quantity);
+                $productSales->setName($week, $name);
+                $productSales->setUnitPrice($week, $unitPrice * 100);
+            }
+        }
+        $statement->close();
+        return $productSalesArray;
+    }
+
+    private static function getWeekDates(int $week, int $year = null): array
+    {
+        $year = $year ?? intval(date("Y"));
+        $dto = new \DateTime();
+        $dto->setISODate($year, $week);
+        $dates['start'] = $dto->format('Y-m-d');
+        $dto->modify('+6 days');
+        $dates['end'] = $dto->format('Y-m-d');
+        return $dates;
     }
 }
