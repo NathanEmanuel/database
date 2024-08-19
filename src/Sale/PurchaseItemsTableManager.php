@@ -37,11 +37,12 @@ trait PurchaseItemsTableManager
 
     public function selectProductSalesOfLastWeeks(array $productIds, int $weekCount, int $currentWeek = null): array
     {
+        $currentWeek = $currentWeek ?? intval((new \DateTime())->format('W'));
+
         if (1 > $currentWeek || $currentWeek > 52) throw new WeekDoesNotExistException;
         if (count($productIds) <= 0 || $weekCount <= 0) return array();
 
         $weekDifference = $weekCount - 1;
-        $currentWeek = $currentWeek ?? intval((new \DateTime())->format('W'));
 
         if ($weekDifference < $currentWeek) {
             // all weeks are in this year
@@ -53,7 +54,7 @@ trait PurchaseItemsTableManager
             $thisYear = intval((new \DateTime())->format('Y'));
             $productSalesLastYear = $this->selectProductSalesByWeek($productIds, range($firstWeekToRetrieve, 52), $thisYear - 1);
             $productSalesThisYear = $this->selectProductSalesByWeek($productIds, range(1, $currentWeek));
-            
+
             // merge this year into last year and return result
             foreach ($productIds as $id) {
                 $dataThisYear = $productSalesThisYear[$id]->getDataByYear();
