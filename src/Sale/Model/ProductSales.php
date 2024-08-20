@@ -7,75 +7,101 @@ class ProductSales
     private array $data = array();
     private int $thisYear;
 
-    public function __construct(
-        private int $productId
-    ) {
+    public function __construct()
+    {
         $this->thisYear = intval((new \DateTime)->format('Y'));
     }
 
-    private function &getDataByWeek(int $week, int $year = null): array
+    private function &getDataByWeek(string $key, int $productId, int $week, int $year = null): int|string
     {
         $year = $year ?? $this->thisYear;
 
-        if (!key_exists($year, $this->data)) {
-            $this->data[$year] = array();
+        if (!key_exists($productId, $this->data)) {
+            $this->data[$productId] = array();
         }
 
-        if (!key_exists($week, $this->data[$year])) {
-            $this->data[$year][$week] = array();
+        if (!key_exists($year, $this->data[$productId])) {
+            $this->data[$productId][$year] = array();
         }
 
-        return $this->data[$year][$week];
+        if (!key_exists($week, $this->data[$productId][$year])) {
+            $this->data[$productId][$year][$week] = array();
+        }
+
+        return $this->data[$productId][$year][$week][$key];
     }
 
-    public function &getDataByYear(int $year = null): array
+    public function setDataByWeek(string $key, int|string $data, int $productId, int $week, int $year = null): void
     {
         $year = $year ?? $this->thisYear;
 
-        if (!key_exists($year, $this->data)) {
-            $this->data[$year] = array();
+        $this->data[$productId][$year][$week][$key] = $data;
+    }
+
+    public function &getDataByYear(int $productId, int $year = null): array
+    {
+        $year = $year ?? $this->thisYear;
+
+        if (!key_exists($productId, $this->data)) {
+            $this->data[$productId] = array();
         }
 
-        return $this->data[$year];
+        if (!key_exists($year, $this->data[$productId])) {
+            $this->data[$productId][$year] = array();
+        }
+
+        return $this->data[$productId][$year];
     }
 
-    public function setDataByYear(array $data, int $year): void
+    public function setDataByYear(array $data, int $productId, int $year): void
     {
-        $this->data[$year] = $data;
+        $this->data[$productId][$year] = $data;
     }
 
-    public function getProductId(): int
+    public function asJson(): string
     {
-        return $this->productId;
+        return json_encode($this->data);
     }
 
-    public function getQuantityByWeek(int $week, int $year = null): int
+
+    // Quantity
+
+
+    public function getQuantityByWeek(int $productId, int $week, int $year = null): int
     {
-        return $this->getDataByWeek($week, $year)['quantity'];
+        return $this->getDataByWeek("quantity", $productId, $week, $year);
     }
 
-    public function setQuantityByWeek(int $quantity, int $week, int $year = null): void
+    public function setQuantityByWeek(int $quantity, int $productId, int $week, int $year = null): void
     {
-        $this->getDataByWeek($week, $year)['quantity'] = $quantity;
+        $this->setDataByWeek("quantity", $quantity, $productId, $week, $year);
     }
 
-    public function getNameByWeek(int $week, int $year = null): string
+
+    // Name
+
+
+    public function getNameByWeek(int $productId, int $week, int $year = null): string
     {
-        return $this->getDataByWeek($week, $year)['name'];
+        return $this->getDataByWeek("name", $productId, $week, $year);
     }
 
-    public function setNameByWeek(string $name, int $week, int $year = null): void
+    public function setNameByWeek(string $name, int $productId, int $week, int $year = null): void
     {
-        $this->getDataByWeek($week, $year)['name'] = $name;
+        $this->setDataByWeek("name", $name, $productId, $week, $year);
     }
 
-    public function getUnitPriceByWeek(int $week, int $year = null): int
+
+    // Unit price
+
+
+    public function getUnitPriceByWeek(int $productId, int $week, int $year = null): int
     {
-        return $this->getDataByWeek($week, $year)['unitPrice'];
+        return $this->getDataByWeek("unitPrice", $productId, $week, $year);
     }
 
-    public function setUnitPriceByWeek(int $unitPrice, int $week, int $year = null): void
+    public function setUnitPriceByWeek(int $unitPrice, int $productId, int $week, int $year = null): void
     {
-        $this->getDataByWeek($week, $year)['unitPrice'] = $unitPrice;
+        $this->setDataByWeek("unitPrice", $unitPrice, $productId, $week, $year);
     }
 }
