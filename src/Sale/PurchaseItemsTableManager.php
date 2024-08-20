@@ -35,7 +35,7 @@ trait PurchaseItemsTableManager
         $statement->close();
     }
 
-    public function selectProductSalesOfLastWeeks(array $productIds, int $weekCount, int $currentWeek = null): array
+    public function selectProductSalesOfLastWeeks(array $productIds, int $weekCount, int $currentWeek = null): ProductSales
     {
         $currentWeek = $currentWeek ?? intval((new \DateTime())->format('W'));
 
@@ -50,16 +50,18 @@ trait PurchaseItemsTableManager
             return $this->selectProductSalesByWeek($productIds, range($firstWeekToRetrieve, $currentWeek));
         } else {
             // first week(s) are in previous year
+
             $firstWeekToRetrieve = 52 - ($weekDifference - $currentWeek);
             $thisYear = intval((new \DateTime())->format('Y'));
+
             $productSalesLastYear = $this->selectProductSalesByWeek($productIds, range($firstWeekToRetrieve, 52), $thisYear - 1);
             $productSalesThisYear = $this->selectProductSalesByWeek($productIds, range(1, $currentWeek));
 
-            // merge this year into last year and return result
-            foreach ($productIds as $id) {
-                $dataThisYear = $productSalesThisYear[$id]->getDataByYear();
-                $productSalesLastYear[$id]->setDataByYear($dataThisYear, $thisYear);
+            foreach ($productIds as $productId) {
+                $productDataThisYear = $productSalesThisYear->getDataByYear($productId, $thisYear);
+                $productSalesLastYear->setDataByYear($productDataThisYear, $productId, $thisYear);
             }
+
             return $productSalesLastYear;
         }
     }

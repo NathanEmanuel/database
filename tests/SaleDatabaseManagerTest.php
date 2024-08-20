@@ -61,23 +61,24 @@ class SaleDatabaseManagerTest extends TestCase
 
     public function testSelectProductSalesOfLastWeeks(): void
     {
-        $productId = 1;
         $currentWeek = 34;
         $weekCount = 8;
 
         $dbm = $this->getDbm();
 
-        $productSales = $dbm->selectProductSalesOfLastWeeks([$productId], $weekCount, $currentWeek);
-        assertSame(1, count($productSales));
-        assertSame(15, $productSales[$productId]->getQuantityByWeek(33));
-        assertSame("3 Cookies", $productSales[$productId]->getNameByWeek(33));
-        assertSame(69, $productSales[$productId]->getUnitPriceByWeek(33));
+        $productSales = $dbm->selectProductSalesOfLastWeeks([1, 2], $weekCount, $currentWeek);
+        assertSame(15, $productSales->getQuantityByWeek(1, 33));
+        assertSame("3 Cookies", $productSales->getNameByWeek(1, 33));
+        assertSame(69, $productSales->getUnitPriceByWeek(1, 33));
+
+        assertSame(3, $productSales->getQuantityByWeek(2, 33, 2024));
+        assertSame("3 Cookies", $productSales->getNameByWeek(2, 33));
+        assertSame(69, $productSales->getUnitPriceByWeek(2, 33));
 
         $currentWeek = 4;
-        $productSales = $dbm->selectProductSalesOfLastWeeks([$productId], $weekCount, $currentWeek);
-        assertSame(1, count($productSales));
-        assertSame(3, $productSales[$productId]->getQuantityByWeek(52, 2023));
-        assertSame("3 Cookies", $productSales[$productId]->getNameByWeek(52, 2023));
-        assertSame(69, $productSales[$productId]->getUnitPriceByWeek(52, 2023));
+        $productSales = $dbm->selectProductSalesOfLastWeeks([1], $weekCount, $currentWeek);
+        assertSame(3, $productSales->getQuantityByWeek(1, 52, 2023));
+        assertSame("3 Cookies", $productSales->getNameByWeek(1, 52, 2023));
+        assertSame(69, $productSales->getUnitPriceByWeek(1, 52, 2023));
     }
 }
