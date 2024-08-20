@@ -1,7 +1,7 @@
 {
     "name": "compucie/database",
     "description": "Library of database managers used by Newton's systems.",
-    "version": "4.1.1",
+    "version": "4.2.0",
     "type": "library",
     "license": "MIT",
     "autoload": {
