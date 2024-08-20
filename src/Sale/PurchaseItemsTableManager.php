@@ -84,7 +84,7 @@ trait PurchaseItemsTableManager
                 $statement->execute();
                 $statement->fetch();
                 $productSales->setQuantityByWeek(($quantity ?? 0), $productId, $week, $year);
-                $productSales->setNameByWeek(($name ?? 0), $productId, $week, $year);
+                $productSales->setNameByWeek(($name ?? ""), $productId, $week, $year);
                 $productSales->setUnitPriceByWeek((($unitPrice ?? 0) * 100), $productId, $week, $year);
             }
         }
