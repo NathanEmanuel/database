@@ -46,14 +46,17 @@ class SaleDatabaseManagerTest extends TestCase
 
     public function testSelectProductSalesByWeek(): void
     {
-        $productId = 1;
         $week = 33;
         $dbm = $this->getDbm();
-        $productSales = $dbm->selectProductSalesByWeek([$productId], [$week]);
-        assertSame($productId, $productSales[$productId]->getProductId());
-        assertSame(15, $productSales[$productId]->getQuantityByWeek($week));
-        assertSame("3 Cookies", $productSales[$productId]->getNameByWeek($week));
-        assertSame(69, $productSales[$productId]->getUnitPriceByWeek($week));
+        $productSales = $dbm->selectProductSalesByWeek([1, 2], [$week]);
+
+        assertSame(15, $productSales->getQuantityByWeek(1, $week));
+        assertSame("3 Cookies", $productSales->getNameByWeek(1, $week));
+        assertSame(69, $productSales->getUnitPriceByWeek(1, $week));
+
+        assertSame(3, $productSales->getQuantityByWeek(2, $week, 2024));
+        assertSame("3 Cookies", $productSales->getNameByWeek(2, $week));
+        assertSame(69, $productSales->getUnitPriceByWeek(2, $week));
     }
 
     public function testSelectProductSalesOfLastWeeks(): void
