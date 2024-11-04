@@ -2,7 +2,9 @@
 
 namespace Compucie\Database\Sale\Model;
 
-class ProductSales
+use JsonSerializable;
+
+class ProductSales implements JsonSerializable
 {
     private array $data = array();
     private int $thisYear;
@@ -10,6 +12,10 @@ class ProductSales
     public function __construct()
     {
         $this->thisYear = intval((new \DateTime)->format('Y'));
+    }
+
+    public function jsonSerialize(): mixed {
+        return json_encode($this->data);
     }
 
     private function &getDataByWeek(string $key, int $productId, int $week, int $year = null): int|string
@@ -56,11 +62,6 @@ class ProductSales
     public function setDataByYear(array $data, int $productId, int $year): void
     {
         $this->data[$productId][$year] = $data;
-    }
-
-    public function asJson(): string
-    {
-        return json_encode($this->data);
     }
 
 
