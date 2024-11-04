@@ -4,6 +4,16 @@ namespace Compucie\Database\Sale\Model;
 
 use JsonSerializable;
 
+/**
+ * Data structure:
+ * 
+ * productId
+ *     year
+ *         week
+ *             quantity
+ *             name
+ *             unitPrice
+ */
 class ProductSales implements JsonSerializable
 {
     private array $data = array();
@@ -14,59 +24,75 @@ class ProductSales implements JsonSerializable
         $this->thisYear = intval((new \DateTime)->format('Y'));
     }
 
-    public function jsonSerialize(): mixed {
+
+    // JsonSerializable
+
+    public function jsonSerialize(): mixed
+    {
         return json_encode($this->data);
     }
 
-    private function &getDataByWeek(string $key, int $productId, int $week, int $year = null): int|string
+
+    // Main getters
+
+    private function &getData(): array
     {
-        $year = $year ?? $this->thisYear;
-
-        if (!key_exists($productId, $this->data)) {
-            $this->data[$productId] = array();
-        }
-
-        if (!key_exists($year, $this->data[$productId])) {
-            $this->data[$productId][$year] = array();
-        }
-
-        if (!key_exists($week, $this->data[$productId][$year])) {
-            $this->data[$productId][$year][$week] = array();
-        }
-
-        return $this->data[$productId][$year][$week][$key];
+        return $this->data;
     }
 
-    public function setDataByWeek(string $key, int|string $data, int $productId, int $week, int $year = null): void
+    private function &getByProductId(int $productId)
     {
-        $year = $year ?? $this->thisYear;
-
-        $this->data[$productId][$year][$week][$key] = $data;
+        $data = &$this->getData();
+        if (!key_exists($productId, $data)) {
+            $data[$productId] = array();
+        }
+        return $this->data[$productId];
     }
 
     public function &getDataByYear(int $productId, int $year = null): array
     {
         $year = $year ?? $this->thisYear;
 
-        if (!key_exists($productId, $this->data)) {
-            $this->data[$productId] = array();
+        $data = &$this->getByProductId($productId);
+
+        if (!key_exists($year, $data)) {
+            $data[$year] = array();
         }
 
-        if (!key_exists($year, $this->data[$productId])) {
-            $this->data[$productId][$year] = array();
-        }
-
-        return $this->data[$productId][$year];
+        return $data[$year];
     }
+
+    public function &getDataByWeek(string $key, int $productId, int $week, int $year = null): int|string
+    {
+        $year = $year ?? $this->thisYear;
+
+        $data = &$this->getDataByYear($productId, $year);
+
+        if (!key_exists($week, $data)) {
+            $data[$week] = array();
+        }
+
+        return $data[$week][$key];
+    }
+
+
+    // Main setters
 
     public function setDataByYear(array $data, int $productId, int $year): void
     {
         $this->data[$productId][$year] = $data;
     }
 
+    public function setDataByWeek(string $key, int|string $data, int $productId, int $week, int $year = null): void
+    {
+        $year = $year ?? $this->thisYear;
 
-    // Quantity
+        $dataByYear = &$this->getDataByYear($productId, $year);
+        $dataByYear[$week][$key] = $data;
+    }
 
+
+    // Quantity getter/setter
 
     public function getQuantityByWeek(int $productId, int $week, int $year = null): int
     {
@@ -79,8 +105,7 @@ class ProductSales implements JsonSerializable
     }
 
 
-    // Name
-
+    // Name getter/setter
 
     public function getNameByWeek(int $productId, int $week, int $year = null): string
     {
@@ -93,8 +118,7 @@ class ProductSales implements JsonSerializable
     }
 
 
-    // Unit price
-
+    // Unit price getter/setter
 
     public function getUnitPriceByWeek(int $productId, int $week, int $year = null): int
     {
