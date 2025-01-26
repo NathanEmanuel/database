@@ -11,17 +11,15 @@ use JsonSerializable;
  *     year
  *         week
  *             quantity
- *             name
- *             unitPrice
  */
 class ProductSales implements JsonSerializable
 {
     private array $data = array();
-    private int $thisYear;
+    private int $presentYear;
 
     public function __construct()
     {
-        $this->thisYear = intval((new \DateTime)->format('Y'));
+        $this->presentYear = intval((new \DateTime)->format('Y'));
     }
 
 
@@ -51,7 +49,7 @@ class ProductSales implements JsonSerializable
 
     public function &getDataByYear(int $productId, int $year = null): array
     {
-        $year = $year ?? $this->thisYear;
+        $year = $year ?? $this->presentYear;
 
         $data = &$this->getByProductId($productId);
 
@@ -64,7 +62,7 @@ class ProductSales implements JsonSerializable
 
     public function &getDataByWeek(string $key, int $productId, int $week, int $year = null): int|string
     {
-        $year = $year ?? $this->thisYear;
+        $year = $year ?? $this->presentYear;
 
         $data = &$this->getDataByYear($productId, $year);
 
@@ -85,7 +83,7 @@ class ProductSales implements JsonSerializable
 
     public function setDataByWeek(string $key, int|string $data, int $productId, int $week, int $year = null): void
     {
-        $year = $year ?? $this->thisYear;
+        $year = $year ?? $this->presentYear;
 
         $dataByYear = &$this->getDataByYear($productId, $year);
         $dataByYear[$week][$key] = $data;
@@ -105,28 +103,21 @@ class ProductSales implements JsonSerializable
     }
 
 
-    // Name getter/setter
+    // Merge
 
-    public function getNameByWeek(int $productId, int $week, int $year = null): string
+    public static function merge(ProductSales $first, ProductSales $second): ProductSales
     {
-        return $this->getDataByWeek("name", $productId, $week, $year);
-    }
-
-    public function setNameByWeek(string $name, int $productId, int $week, int $year = null): void
-    {
-        $this->setDataByWeek("name", $name, $productId, $week, $year);
-    }
-
-
-    // Unit price getter/setter
-
-    public function getUnitPriceByWeek(int $productId, int $week, int $year = null): int
-    {
-        return $this->getDataByWeek("unitPrice", $productId, $week, $year);
-    }
-
-    public function setUnitPriceByWeek(int $unitPrice, int $productId, int $week, int $year = null): void
-    {
-        $this->setDataByWeek("unitPrice", $unitPrice, $productId, $week, $year);
+        $result = new ProductSales();
+        foreach ($first->getData() as $productId => $productData) {
+            foreach ($productData as $year => $productDataYear) {
+                $result->setDataByYear($productDataYear + $second->getDataByYear($productId, $year), $productId, $year);
+            }
+        }
+        foreach ($second->getData() as $productId => $productData) {
+            foreach ($productData as $year => $productDataYear) {
+                $result->setDataByYear($productDataYear + $first->getDataByYear($productId, $year), $productId, $year);
+            }
+        }
+        return $result;
     }
 }

@@ -47,15 +47,15 @@ trait PurchaseItemsTableManager
         if ($weekDifference < $currentWeek) {
             // all weeks are in this year
             $firstWeekToRetrieve = $currentWeek - $weekCount;
-            return $this->selectProductSalesByWeek($productIds, range($firstWeekToRetrieve, $currentWeek));
+            return $this->selectProductSalesByWeeks($productIds, range($firstWeekToRetrieve, $currentWeek));
         } else {
             // first week(s) are in previous year
 
             $firstWeekToRetrieve = 52 - ($weekDifference - $currentWeek);
             $thisYear = intval((new \DateTime())->format('Y'));
 
-            $productSalesLastYear = $this->selectProductSalesByWeek($productIds, range($firstWeekToRetrieve, 52), $thisYear - 1);
-            $productSalesThisYear = $this->selectProductSalesByWeek($productIds, range(1, $currentWeek));
+            $productSalesLastYear = $this->selectProductSalesByWeeks($productIds, range($firstWeekToRetrieve, 52), $thisYear - 1);
+            $productSalesThisYear = $this->selectProductSalesByWeeks($productIds, range(1, $currentWeek));
 
             foreach ($productIds as $productId) {
                 $productDataThisYear = $productSalesThisYear->getDataByYear($productId, $thisYear);
@@ -69,31 +69,38 @@ trait PurchaseItemsTableManager
     /**
      * Return the product sales data for the given products in the given weeks of the given year.
      *
-     * @param   int[]   $productIds     Array of product IDs.
-     * @param   int[]   $weeks          Array of week numbers.
-     * @param   int     $year           [Optional] The year in which the week numbers apply.
-     * @return  Model\ProductSales
+     * @param   int[]   $productId      Product IDs.
+     * @param   int[]   $weeks          Week numbers.
+     * @param   int     $year           [Optional] The year in which the week number applies.
+     * @return  ProductSales
      */
-    public function selectProductSalesByWeek(array $productIds, array $weeks, int $year = null): ProductSales
+    public function selectProductSalesByWeeks(array $productIds, array $weeks, int $year = null): ProductSales
     {
-        $statement = $this->getClient()->prepare("SELECT SUM(`quantity`), `name`, `unit_price` FROM `purchase_items` WHERE `product_id` = ? AND `purchase_id` IN (SELECT `purchase_id` FROM `purchases` WHERE `purchased_at` BETWEEN ? AND ?);");
         $productSales = new ProductSales();
+        $statement = $this->getClient()->prepare(
+            "SELECT SUM(`quantity`) FROM `purchase_items`
+            WHERE `product_id` = ?
+            AND `purchase_id` IN (SELECT `purchase_id` FROM `purchases` WHERE `purchased_at` BETWEEN ? AND ?);"
+        );
         foreach ($productIds as $productId) {
             foreach ($weeks as $week) {
                 $weekDates = self::getWeekDates($week, $year);
                 $statement->bind_param("iss", $productId, $weekDates['start'], $weekDates['end']);
-                $statement->bind_result($quantity, $name, $unitPrice);
+                $statement->bind_result($quantity);
                 $statement->execute();
                 $statement->fetch();
-                $productSales->setQuantityByWeek(($quantity ?? 0), $productId, $week, $year);
-                $productSales->setNameByWeek(($name ?? ""), $productId, $week, $year);
-                $productSales->setUnitPriceByWeek((($unitPrice ?? 0) * 100), $productId, $week, $year);
+                $productSales->setQuantityByWeek($quantity ?? 0, $productId, $week, $year);
             }
         }
         $statement->close();
         return $productSales;
     }
 
+    /**
+     * Return an array with the first and last date of the given week in the optionally given year.
+     * The current year will be used if the year is not given. The dates are represented as DateTime objects.
+     * The first date has key 'start'. The last date has key 'end'.
+     */
     private static function getWeekDates(int $week, int $year = null): array
     {
         $year = $year ?? intval(date("Y"));
