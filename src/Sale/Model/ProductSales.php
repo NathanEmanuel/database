@@ -27,7 +27,7 @@ class ProductSales implements JsonSerializable
 
     public function jsonSerialize(): mixed
     {
-        return json_encode($this->data);
+        return $this->data;
     }
 
 
