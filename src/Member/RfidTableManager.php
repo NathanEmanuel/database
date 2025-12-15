@@ -50,12 +50,12 @@ trait RfidTableManager
     }
 
     /**
-     * Return whether the given card is registered.
+     * Return whether the given card is activated.
      * @param   string      $cardId     ID of the card
-     * @return  bool                    Whether the card is registered
+     * @return  bool                    Whether the card is activated
      * @throws  mysqli_sql_exception
      */
-    public function isRfidCardRegistered(string $cardId): bool
+    public function isRfidCardActivated(string $cardId): bool
     {
         $statement = $this->getClient()->prepare("SELECT COUNT(*) FROM `rfid` WHERE `card_id` = ? AND `is_email_confirmed` = TRUE");
         $statement->bind_param("s", $cardId);
@@ -141,7 +141,7 @@ trait RfidTableManager
      * @param   int     $congressusMemberId     Member whose registrations to delete
      * @throws  mysqli_sql_exception
      */
-    public function deleteMembersRfidRegistrations(int $congressusMemberId): void
+    public function deleteMembersActivatedRegistrations(int $congressusMemberId): void
     {
         $statement = $this->getClient()->prepare("DELETE FROM `rfid` WHERE `congressus_member_id` = ? AND `is_email_confirmed` = TRUE");
         $statement->bind_param("i", $congressusMemberId);
