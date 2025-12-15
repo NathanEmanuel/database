@@ -2,6 +2,7 @@
 
 namespace Compucie\Database\Member;
 
+use DateTime;
 use mysqli;
 
 trait RfidTableManager
@@ -14,7 +15,10 @@ trait RfidTableManager
             "CREATE TABLE `rfid` (
                 `card_id` VARCHAR(14) NOT NULL,
                 `congressus_member_id` INT NOT NULL,
+                `activation_token` VARCHAR(255) DEFAULT NULL,
+                `activation_token_valid_until` DATETIME DEFAULT NULL,
                 `is_email_confirmed` BOOLEAN NOT NULL DEFAULT FALSE,
+                `last_used_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 PRIMARY KEY (`card_id`)
             );"
         );
@@ -64,16 +68,70 @@ trait RfidTableManager
     }
 
     /**
+     * Get activation token info for a given card ID.
+     * @param   string      $cardId     ID of the card
+     * @return  array|null              Array with 'activation_token' and 'activation_token_valid_until' or null if not found
+     * @throws  mysqli_sql_exception
+     * @throws  ActivationTokenNotFoundException
+     */
+    public function getActivationTokenInfo(string $cardId): array
+    {
+        $statement = $this->getClient()->prepare("SELECT `activation_token`, `activation_token_valid_until`, FROM `rfid` WHERE `card_id` = ?");
+        $statement->bind_param("s", $cardId);
+        $statement->bind_result($activationToken, $activationTokenValidUntil);
+        $statement->execute();
+        $statement->fetch();
+        $statement->close();
+
+        if (is_null($activationToken) || is_null($activationTokenValidUntil)) {
+            throw new ActivationTokenNotFoundException();
+        }
+
+        return [
+            'activation_token' => $activationToken,
+            'activation_token_valid_until' => new DateTime($activationTokenValidUntil),
+        ];
+    }
+
+    /**
      * Register a card by inserting the card ID and associated member ID.
      * @param   string      $cardId                 ID of the card
      * @param   int         $congressusMemberId     Congressus member ID
+     * @param   string      $activation_token       Activation token for email confirmation
+     * @param   DateTime    $activationTokenValidUntil   Expiration date of the activation token
      * @param   bool        $isEmailConfirmed       Whether the member confirmed their registration
      * @throws  mysqli_sql_exception
      */
-    public function insertRfid(string $cardId, int $congressusMemberId, bool $isEmailConfirmed = FALSE): void
+    public function insertRfid(string $cardId, int $congressusMemberId, string $activation_token, DateTime $activationTokenValidUntil, bool $isEmailConfirmed = FALSE): void
     {
-        $statement = $this->getClient()->prepare("INSERT INTO `rfid` (`card_id`, `congressus_member_id`, `is_email_confirmed`) VALUES (?, ?, ?)");
-        $statement->bind_param("sii", $cardId, $congressusMemberId, $isEmailConfirmed);
+        $statement = $this->getClient()->prepare("INSERT INTO `rfid` (`card_id`, `congressus_member_id`, `activation_token`, `activation_token_valid_until`, `is_email_confirmed`) VALUES (?, ?, ?, ?, ?)");
+        $statement->bind_param("sissi", $cardId, $congressusMemberId, $activation_token, $activationTokenValidUntil->format("Y-m-d H:i:s"), $isEmailConfirmed);
+        $statement->execute();
+        $statement->close();
+    }
+
+    /**
+     * Activate a card by setting is_email_confirmed to TRUE and clearing activation token fields.
+     * @param   string      $cardId     ID of the card to activate
+     * @throws  mysqli_sql_exception
+     */
+    public function activateCard(string $cardId): void
+    {
+        $statement = $this->getClient()->prepare("UPDATE `rfid` SET `is_email_confirmed` = TRUE, `activation_token` = NULL, `activation_token_valid_until` = NULL WHERE `card_id` = ?");
+        $statement->bind_param("s", $cardId);
+        $statement->execute();
+        $statement->close();
+    }
+
+    /**
+     * Update the last used timestamp of a card to the current time.
+     * @param   string      $cardId     ID of the card to update
+     * @throws  mysqli_sql_exception
+     */
+    public function updateLastUsedAt(string $cardId): void
+    {
+        $statement = $this->getClient()->prepare("UPDATE `rfid` SET `last_used_at` = CURRENT_TIMESTAMP WHERE `card_id` = ?");
+        $statement->bind_param("s", $cardId);
         $statement->execute();
         $statement->close();
     }
@@ -91,3 +149,5 @@ trait RfidTableManager
         $statement->close();
     }
 }
+
+class ActivationTokenNotFoundException extends \Exception {}
