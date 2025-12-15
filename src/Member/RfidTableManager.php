@@ -15,7 +15,7 @@ trait RfidTableManager
             "CREATE TABLE `rfid` (
                 `card_id` VARCHAR(14) NOT NULL,
                 `congressus_member_id` INT NOT NULL,
-                `activation_token` VARCHAR(255) DEFAULT NULL,
+                `hashed_activation_token` VARCHAR(255) DEFAULT NULL,
                 `activation_token_valid_until` DATETIME DEFAULT NULL,
                 `is_email_confirmed` BOOLEAN NOT NULL DEFAULT FALSE,
                 `last_used_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -57,7 +57,7 @@ trait RfidTableManager
      */
     public function isRfidCardRegistered(string $cardId): bool
     {
-        $statement = $this->getClient()->prepare("SELECT COUNT(*) FROM `rfid` WHERE `card_id` = ?");
+        $statement = $this->getClient()->prepare("SELECT COUNT(*) FROM `rfid` WHERE `card_id` = ? AND `is_email_confirmed` = TRUE");
         $statement->bind_param("s", $cardId);
         $statement->bind_result($count);
         $statement->execute();
@@ -68,27 +68,27 @@ trait RfidTableManager
     }
 
     /**
-     * Get activation token info for a given card ID.
+     * Get hashed activation token info for a given card ID.
      * @param   string      $cardId     ID of the card
-     * @return  array|null              Array with 'activation_token' and 'activation_token_valid_until' or null if not found
+     * @return  array|null              Array with 'hashed_activation_token' and 'activation_token_valid_until' or null if not found
      * @throws  mysqli_sql_exception
      * @throws  ActivationTokenNotFoundException
      */
     public function getActivationTokenInfo(string $cardId): array
     {
-        $statement = $this->getClient()->prepare("SELECT `activation_token`, `activation_token_valid_until`, FROM `rfid` WHERE `card_id` = ?");
+        $statement = $this->getClient()->prepare("SELECT `hashed_activation_token`, `activation_token_valid_until`, FROM `rfid` WHERE `card_id` = ?");
         $statement->bind_param("s", $cardId);
-        $statement->bind_result($activationToken, $activationTokenValidUntil);
+        $statement->bind_result($hashedActivationToken, $activationTokenValidUntil);
         $statement->execute();
         $statement->fetch();
         $statement->close();
 
-        if (is_null($activationToken) || is_null($activationTokenValidUntil)) {
+        if (is_null($hashedActivationToken) || is_null($activationTokenValidUntil)) {
             throw new ActivationTokenNotFoundException();
         }
 
         return [
-            'activation_token' => $activationToken,
+            'hashed_activation_token' => $hashedActivationToken,
             'activation_token_valid_until' => new DateTime($activationTokenValidUntil),
         ];
     }
@@ -97,15 +97,15 @@ trait RfidTableManager
      * Register a card by inserting the card ID and associated member ID.
      * @param   string      $cardId                 ID of the card
      * @param   int         $congressusMemberId     Congressus member ID
-     * @param   string      $activation_token       Activation token for email confirmation
+     * @param   string      $hashedActivationToken  Hashed activation token for email confirmation
      * @param   DateTime    $activationTokenValidUntil   Expiration date of the activation token
      * @param   bool        $isEmailConfirmed       Whether the member confirmed their registration
      * @throws  mysqli_sql_exception
      */
-    public function insertRfid(string $cardId, int $congressusMemberId, string $activation_token, DateTime $activationTokenValidUntil, bool $isEmailConfirmed = FALSE): void
+    public function insertRfid(string $cardId, int $congressusMemberId, string $hashedActivationToken, DateTime $activationTokenValidUntil, bool $isEmailConfirmed = FALSE): void
     {
-        $statement = $this->getClient()->prepare("INSERT INTO `rfid` (`card_id`, `congressus_member_id`, `activation_token`, `activation_token_valid_until`, `is_email_confirmed`) VALUES (?, ?, ?, ?, ?)");
-        $statement->bind_param("sissi", $cardId, $congressusMemberId, $activation_token, $activationTokenValidUntil->format("Y-m-d H:i:s"), $isEmailConfirmed);
+        $statement = $this->getClient()->prepare("INSERT INTO `rfid` (`card_id`, `congressus_member_id`, `hashed_activation_token`, `activation_token_valid_until`, `is_email_confirmed`) VALUES (?, ?, ?, ?, ?)");
+        $statement->bind_param("sissi", $cardId, $congressusMemberId, $hashedActivationToken, $activationTokenValidUntil->format("Y-m-d H:i:s"), $isEmailConfirmed);
         $statement->execute();
         $statement->close();
     }
@@ -117,7 +117,7 @@ trait RfidTableManager
      */
     public function activateCard(string $cardId): void
     {
-        $statement = $this->getClient()->prepare("UPDATE `rfid` SET `is_email_confirmed` = TRUE, `activation_token` = NULL, `activation_token_valid_until` = NULL WHERE `card_id` = ?");
+        $statement = $this->getClient()->prepare("UPDATE `rfid` SET `is_email_confirmed` = TRUE, `hashed_activation_token` = NULL, `activation_token_valid_until` = NULL WHERE `card_id` = ?");
         $statement->bind_param("s", $cardId);
         $statement->execute();
         $statement->close();
@@ -137,13 +137,13 @@ trait RfidTableManager
     }
 
     /**
-     * Delete a member's card registrations.
+     * Delete a member's activated card registrations.
      * @param   int     $congressusMemberId     Member whose registrations to delete
      * @throws  mysqli_sql_exception
      */
     public function deleteMembersRfidRegistrations(int $congressusMemberId): void
     {
-        $statement = $this->getClient()->prepare("DELETE FROM `rfid` WHERE `congressus_member_id` = ?");
+        $statement = $this->getClient()->prepare("DELETE FROM `rfid` WHERE `congressus_member_id` = ? AND `is_email_confirmed` = TRUE");
         $statement->bind_param("i", $congressusMemberId);
         $statement->execute();
         $statement->close();
