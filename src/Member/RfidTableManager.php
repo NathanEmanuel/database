@@ -76,7 +76,7 @@ trait RfidTableManager
      */
     public function getActivationTokenInfo(string $cardId): array
     {
-        $statement = $this->getClient()->prepare("SELECT `hashed_activation_token`, `activation_token_valid_until`, FROM `rfid` WHERE `card_id` = ?");
+        $statement = $this->getClient()->prepare("SELECT `hashed_activation_token`, `activation_token_valid_until` FROM `rfid` WHERE `card_id` = ?");
         $statement->bind_param("s", $cardId);
         $statement->bind_result($hashedActivationToken, $activationTokenValidUntil);
         $statement->execute();
