@@ -8,6 +8,8 @@ use Compucie\Database\Poll\Model\Poll;
 use DateTime;
 use Exception;
 use mysqli_sql_exception;
+use function Compucie\Database\makeErrorLogging;
+use function Compucie\Database\safeDateTime;
 
 class PollDatabaseManager extends DatabaseManager
 {
@@ -90,7 +92,7 @@ class PollDatabaseManager extends DatabaseManager
             try {
                 $activePolls[] = $this->getPoll($id);
             } catch (Exception $e) {
-                error_log("getActivePolls: " . $e->getMessage());
+                makeErrorLogging("getActivePolls", $e);
                 continue;
             }
         }
@@ -113,7 +115,7 @@ class PollDatabaseManager extends DatabaseManager
         try {
             return self::getPoll($pollId);
         } catch (Exception $e) {
-            error_log("getMostRecentlyExpiredPoll: " . $e->getMessage());
+            makeErrorLogging("getMostRecentlyExpiredPoll", $e);
             return null;
         }
     }
@@ -144,7 +146,7 @@ class PollDatabaseManager extends DatabaseManager
             try {
                 $latestPolls[] = $this->getPoll($id);
             } catch (Exception $e) {
-                error_log("getLatestPolls: " . $e->getMessage());
+                makeErrorLogging("getLatestPolls", $e);
                 continue;
             }
         }
@@ -281,24 +283,11 @@ class PollDatabaseManager extends DatabaseManager
         return new Poll(
             $pollId,
             $question,
-            $this->safeDateTime($publishedAt),
-            $this->safeDateTime($expiresAt),
+            safeDateTime($publishedAt),
+            safeDateTime($expiresAt),
             $optionsVoteCounted,
             $pollVoteCount
         );
-    }
-
-    private function safeDateTime(?string $value): DateTime
-    {
-        if ($value === null || $value === '') {
-            return new DateTime();
-        }
-
-        try {
-            return new DateTime($value);
-        } catch (Exception) {
-            return new DateTime();
-        }
     }
 
     /**
