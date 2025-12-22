@@ -6,11 +6,15 @@ use Compucie\Database\Sale\Exceptions\WeekDoesNotExistException;
 use Compucie\Database\Sale\Model\ProductSales;
 use DateTime;
 use mysqli;
+use mysqli_sql_exception;
 
 trait PurchaseItemsTableManager
 {
     protected abstract function getClient(): mysqli;
 
+    /**
+     * @throws  mysqli_sql_exception
+     */
     protected function createPurchaseItemsTable(): void
     {
         $statement = $this->getClient()->prepare(
@@ -29,6 +33,9 @@ trait PurchaseItemsTableManager
         $statement->close();
     }
 
+    /**
+     * @throws  mysqli_sql_exception
+     */
     public function insertPurchaseItem(int $purchaseId, int $productId, int $quantity = 1, ?string $name = null, ?float $unitPrice = null): void
     {
         $statement = $this->getClient()->prepare("INSERT INTO `purchase_items` (`purchase_id`, `product_id`, `quantity`, `name`, `unit_price`) VALUES (?, ?, ?, ?, ?);");
@@ -44,7 +51,7 @@ trait PurchaseItemsTableManager
     {
         $currentWeek = $currentWeek ?? intval((new DateTime())->format('W'));
 
-        if (1 > $currentWeek || $currentWeek > 52) throw new WeekDoesNotExistException;
+        if (1 > $currentWeek || $currentWeek > 52) throw new WeekDoesNotExistException($currentWeek);
         if (count($productIds) <= 0 || $weekCount <= 0) return new ProductSales();
 
         $weekDifference = $weekCount - 1;
@@ -78,6 +85,7 @@ trait PurchaseItemsTableManager
      * @param   int[]        $weeks          Array of week numbers.
      * @param   int|null     $year           [Optional] The year in which the week numbers apply.
      * @return  ProductSales
+     * @throws  mysqli_sql_exception
      */
     public function selectProductSalesByWeeks(array $productIds, array $weeks, int $year = null): ProductSales
     {
@@ -100,6 +108,7 @@ trait PurchaseItemsTableManager
             }
         }
         $statement->close();
+
         return $productSales;
     }
 
@@ -116,6 +125,7 @@ trait PurchaseItemsTableManager
         $dates['start'] = $dto->format('Y-m-d');
         $dto->modify('+6 days');
         $dates['end'] = $dto->format('Y-m-d');
+
         return $dates;
     }
 }
