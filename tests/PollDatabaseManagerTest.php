@@ -6,6 +6,9 @@ use DateInterval;
 use DateTime;
 use Exception;
 use PHPUnit\Framework\TestCase;
+use function PHPUnit\Framework\assertFalse;
+use function PHPUnit\Framework\assertSame;
+use function PHPUnit\Framework\assertTrue;
 
 class PollDatabaseManagerTest extends TestCase
 {
@@ -45,10 +48,10 @@ class PollDatabaseManagerTest extends TestCase
 
         $ids = $this->dbm->getActivePollIds();
 
-        $this->assertSame(3, $this->dbh->rowCount('polls'));
-        $this->assertSame(0, $this->dbh->rowCount('options'));
-        $this->assertSame(0, $this->dbh->rowCount('votes'));
-        $this->assertSame(1, count($ids));
+        assertSame(3, $this->dbh->rowCount('polls'));
+        assertSame(0, $this->dbh->rowCount('options'));
+        assertSame(0, $this->dbh->rowCount('votes'));
+        assertSame(1, count($ids));
     }
 
     function testGetActivePolls(): void
@@ -69,11 +72,11 @@ class PollDatabaseManagerTest extends TestCase
 
         $polls = $this->dbm->getActivePolls();
 
-        $this->assertSame(3, $this->dbh->rowCount('polls'));
-        $this->assertSame(0, $this->dbh->rowCount('options'));
-        $this->assertSame(0, $this->dbh->rowCount('votes'));
-        $this->assertSame(1, count($polls));
-        $this->assertSame($question2, $polls[0]->getQuestion());
+        assertSame(3, $this->dbh->rowCount('polls'));
+        assertSame(0, $this->dbh->rowCount('options'));
+        assertSame(0, $this->dbh->rowCount('votes'));
+        assertSame(1, count($polls));
+        assertSame($question2, $polls[0]->getQuestion());
 
     }
 
@@ -97,7 +100,7 @@ class PollDatabaseManagerTest extends TestCase
         sleep(2);
 
         $poll = $this->dbm->getMostRecentlyExpiredPoll();
-        $this->assertSame(3, $poll->getId());
+        assertSame(3, $poll->getId());
     }
 
     function testGetLatestPolls()
@@ -115,7 +118,7 @@ class PollDatabaseManagerTest extends TestCase
         $this->dbm->addPoll($question3, $date3);
 
         $polls = $this->dbm->getLatestPolls(2);
-        $this->assertSame(2, count($polls));
+        assertSame(2, count($polls));
     }
 
     function testHasUserVoted()
@@ -131,12 +134,12 @@ class PollDatabaseManagerTest extends TestCase
         $voted = $this->dbm->hasUserVoted(1, 2);
         $notVoted = $this->dbm->hasUserVoted(1, 4);
 
-        $this->assertSame(1, $this->dbh->rowCount('polls'));
-        $this->assertSame(2, $this->dbh->rowCount('options'));
-        $this->assertSame(3, $this->dbh->rowCount('votes'));
+        assertSame(1, $this->dbh->rowCount('polls'));
+        assertSame(2, $this->dbh->rowCount('options'));
+        assertSame(3, $this->dbh->rowCount('votes'));
 
-        $this->assertTrue($voted);
-        $this->assertFalse($notVoted);
+        assertTrue($voted);
+        assertFalse($notVoted);
     }
 
     function testGetVotablePollIds()
@@ -154,11 +157,11 @@ class PollDatabaseManagerTest extends TestCase
 
         $ids = $this->dbm->getVotablePollIds(2);
 
-        $this->assertSame(2, $this->dbh->rowCount('polls'));
-        $this->assertSame(4, $this->dbh->rowCount('options'));
-        $this->assertSame(3, $this->dbh->rowCount('votes'));
+        assertSame(2, $this->dbh->rowCount('polls'));
+        assertSame(4, $this->dbh->rowCount('options'));
+        assertSame(3, $this->dbh->rowCount('votes'));
 
-        $this->assertSame(1, count($ids));
+        assertSame(1, count($ids));
     }
 
     function testAddPoll()
@@ -168,10 +171,10 @@ class PollDatabaseManagerTest extends TestCase
         $date1 = new DateTime();
         $this->dbm->addPoll($question1, $date1);
 
-        $this->assertSame(1, $this->dbh->rowCount('polls'));
-        $this->assertSame(0, $this->dbh->rowCount('options'));
-        $this->assertSame(0, $this->dbh->rowCount('votes'));
-        $this->assertSame(1, $this->dbh->rowCount(
+        assertSame(1, $this->dbh->rowCount('polls'));
+        assertSame(0, $this->dbh->rowCount('options'));
+        assertSame(0, $this->dbh->rowCount('votes'));
+        assertSame(1, $this->dbh->rowCount(
             'polls', 'poll_id = 1 AND question = ? AND published_at IS NOT NULL AND expires_at = ?',[$question1, $date1->format('Y-m-d H:i:s')])
         );
     }
@@ -185,13 +188,13 @@ class PollDatabaseManagerTest extends TestCase
         $this->dbm->addOption(1, $option1);
         $this->dbm->addOption(1, $option2);
 
-        $this->assertSame(1, $this->dbh->rowCount('polls'));
-        $this->assertSame(2, $this->dbh->rowCount('options'));
-        $this->assertSame(0, $this->dbh->rowCount('votes'));
-        $this->assertSame(1, $this->dbh->rowCount(
+        assertSame(1, $this->dbh->rowCount('polls'));
+        assertSame(2, $this->dbh->rowCount('options'));
+        assertSame(0, $this->dbh->rowCount('votes'));
+        assertSame(1, $this->dbh->rowCount(
             'options', 'option_id = 1 AND poll_id = 1 AND text = ?',[$option1])
         );
-        $this->assertSame(1, $this->dbh->rowCount(
+        assertSame(1, $this->dbh->rowCount(
             'options', 'option_id = 2 AND poll_id = 1 AND text = ?',[$option2])
         );
     }
@@ -205,25 +208,25 @@ class PollDatabaseManagerTest extends TestCase
         $this->dbm->addOption(1, $option1);
         $this->dbm->addOption(1, $option2);
 
-        $this->assertSame(1, $this->dbh->rowCount('polls'));
-        $this->assertSame(2, $this->dbh->rowCount('options'));
-        $this->assertSame(0, $this->dbh->rowCount('votes'));
-        $this->assertSame(1, $this->dbh->rowCount(
+        assertSame(1, $this->dbh->rowCount('polls'));
+        assertSame(2, $this->dbh->rowCount('options'));
+        assertSame(0, $this->dbh->rowCount('votes'));
+        assertSame(1, $this->dbh->rowCount(
             'options', 'option_id = 1 AND poll_id = 1 AND text = ?',[$option1])
         );
-        $this->assertSame(1, $this->dbh->rowCount(
+        assertSame(1, $this->dbh->rowCount(
             'options', 'option_id = 2 AND poll_id = 1 AND text = ?',[$option2])
         );
 
         $this->dbm->deleteOption(1);
 
-        $this->assertSame(1, $this->dbh->rowCount('polls'));
-        $this->assertSame(1, $this->dbh->rowCount('options'));
-        $this->assertSame(0, $this->dbh->rowCount('votes'));
-        $this->assertSame(0, $this->dbh->rowCount(
+        assertSame(1, $this->dbh->rowCount('polls'));
+        assertSame(1, $this->dbh->rowCount('options'));
+        assertSame(0, $this->dbh->rowCount('votes'));
+        assertSame(0, $this->dbh->rowCount(
             'options', 'option_id = 1 AND poll_id = 1 AND text = ?',[$option1])
         );
-        $this->assertSame(1, $this->dbh->rowCount(
+        assertSame(1, $this->dbh->rowCount(
             'options', 'option_id = 2 AND poll_id = 1 AND text = ?',[$option2])
         );
     }
@@ -238,16 +241,16 @@ class PollDatabaseManagerTest extends TestCase
         $this->dbm->addVote(1, 2,2);
         $this->dbm->addVote(1, 3,1);
 
-        $this->assertSame(1, $this->dbh->rowCount('polls'));
-        $this->assertSame(2, $this->dbh->rowCount('options'));
-        $this->assertSame(3, $this->dbh->rowCount('votes'));
-        $this->assertSame(1, $this->dbh->rowCount(
+        assertSame(1, $this->dbh->rowCount('polls'));
+        assertSame(2, $this->dbh->rowCount('options'));
+        assertSame(3, $this->dbh->rowCount('votes'));
+        assertSame(1, $this->dbh->rowCount(
             'votes', 'vote_id = 1 AND poll_id = 1 AND user_id = 1 AND option_id = 1')
         );
-        $this->assertSame(1, $this->dbh->rowCount(
+        assertSame(1, $this->dbh->rowCount(
             'votes', 'vote_id = 2 AND poll_id = 1 AND user_id = 2 AND option_id = 2')
         );
-        $this->assertSame(1, $this->dbh->rowCount(
+        assertSame(1, $this->dbh->rowCount(
             'votes', 'vote_id = 3 AND poll_id = 1 AND user_id = 3 AND option_id = 1')
         );
     }
@@ -272,18 +275,18 @@ class PollDatabaseManagerTest extends TestCase
 
         $poll = $this->dbm->getPoll(1);
 
-        $this->assertSame(1, $poll->getId());
-        $this->assertSame($question1, $poll->getQuestion());
+        assertSame(1, $poll->getId());
+        assertSame($question1, $poll->getQuestion());
 //        echo $poll->getPublishedAt()->format('Y-m-d H:i:s');
 //        echo $poll->getExpiresAt()->format('Y-m-d H:i:s');
-        $this->assertSame($date1->format('Y-m-d H:i:s'), $poll->getExpiresAt()->format('Y-m-d H:i:s'));
+        assertSame($date1->format('Y-m-d H:i:s'), $poll->getExpiresAt()->format('Y-m-d H:i:s'));
         $options = $poll->getOptions();
-        $this->assertSame(2, count($options->getIds()));
-        $this->assertSame($option1, $options->getText(1));
-        $this->assertSame(2, $options->getVoteCount(1));
-        $this->assertSame($option2, $options->getText(2));
-        $this->assertSame(1, $options->getVoteCount(2));
-        $this->assertSame(3, $poll->getVoteCount());
+        assertSame(2, count($options->getIds()));
+        assertSame($option1, $options->getText(1));
+        assertSame(2, $options->getVoteCount(1));
+        assertSame($option2, $options->getText(2));
+        assertSame(1, $options->getVoteCount(2));
+        assertSame(3, $poll->getVoteCount());
     }
 
     function testGetPollNotFound()
@@ -298,12 +301,12 @@ class PollDatabaseManagerTest extends TestCase
         $question1 = "Is this a poll?";
         $date1 = new DateTime();
         $this->dbm->addPoll($question1, $date1);
-        $this->assertSame(1, $this->dbh->rowCount(
+        assertSame(1, $this->dbh->rowCount(
             'polls', 'poll_id = 1 AND question = ? AND published_at IS NOT NULL AND expires_at = ?',[$question1, $date1->format('Y-m-d H:i:s')])
         );
         sleep(2);
         $this->dbm->expirePoll(1);
-        $this->assertSame(1, $this->dbh->rowCount(
+        assertSame(1, $this->dbh->rowCount(
             'polls', 'poll_id = 1 AND question = ? AND published_at IS NOT NULL AND expires_at > ?',[$question1, $date1->format('Y-m-d H:i:s')])
         );
     }

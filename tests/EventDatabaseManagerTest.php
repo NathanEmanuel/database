@@ -4,6 +4,7 @@ namespace Compucie\DatabaseTest;
 
 use DateTime;
 use PHPUnit\Framework\TestCase;
+use function PHPUnit\Framework\assertSame;
 
 class EventDatabaseManagerTest extends TestCase
 {
@@ -37,17 +38,17 @@ class EventDatabaseManagerTest extends TestCase
         $this->dbm->insertPin(2, endAt: $date2);
         $this->dbm->insertPin(3, $date3, $date4);
 
-        $this->assertSame(4, $this->dbh->rowCount('pins'));
-        $this->assertSame(1, $this->dbh->rowCount(
+        assertSame(4, $this->dbh->rowCount('pins'));
+        assertSame(1, $this->dbh->rowCount(
             'pins', 'event_id = 0 AND pin_id = 1 AND start_at IS NOT NULL AND end_at IS NULL')
         );
-        $this->assertSame(1, $this->dbh->rowCount(
+        assertSame(1, $this->dbh->rowCount(
             'pins', 'event_id = 1 AND pin_id = 2 AND start_at = ? AND end_at IS NULL',[$date1->format('Y-m-d H:i:s')])
         );
-        $this->assertSame(1, $this->dbh->rowCount(
+        assertSame(1, $this->dbh->rowCount(
             'pins', 'event_id = 2 AND pin_id = 3 AND start_at IS NOT NULL AND end_at = ?',[$date2->format('Y-m-d H:i:s')])
         );
-        $this->assertSame(1, $this->dbh->rowCount(
+        assertSame(1, $this->dbh->rowCount(
             'pins', 'event_id = 3 AND pin_id = 4 AND start_at = ? AND end_at = ?',[$date3->format('Y-m-d H:i:s'), $date4->format('Y-m-d H:i:s')])
         );
     }
@@ -74,17 +75,17 @@ class EventDatabaseManagerTest extends TestCase
         $this->dbm->updatePin(2, endAt: $date6);
         $this->dbm->updatePin(3, $date7, $date8);
 
-        $this->assertSame(4, $this->dbh->rowCount('pins'));
-        $this->assertSame(1, $this->dbh->rowCount(
+        assertSame(4, $this->dbh->rowCount('pins'));
+        assertSame(1, $this->dbh->rowCount(
             'pins', 'event_id = 0 AND pin_id = 1 AND start_at IS NOT NULL AND end_at IS NULL')
         );
-        $this->assertSame(1, $this->dbh->rowCount(
+        assertSame(1, $this->dbh->rowCount(
             'pins', 'event_id = 1 AND pin_id = 2 AND start_at = ? AND end_at IS NULL',[$date5->format('Y-m-d H:i:s')])
         );
-        $this->assertSame(1, $this->dbh->rowCount(
+        assertSame(1, $this->dbh->rowCount(
             'pins', 'event_id = 2 AND pin_id = 3 AND start_at IS NOT NULL AND end_at = ?',[$date6->format('Y-m-d H:i:s')])
         );
-        $this->assertSame(1, $this->dbh->rowCount(
+        assertSame(1, $this->dbh->rowCount(
             'pins', 'event_id = 3 AND pin_id = 4 AND start_at = ? AND end_at = ?',[$date7->format('Y-m-d H:i:s'), $date8->format('Y-m-d H:i:s')])
         );
     }
@@ -102,6 +103,6 @@ class EventDatabaseManagerTest extends TestCase
         $this->dbm->insertPin(3, $date3, $date4);
 
         $eventIds = $this->dbm->getCurrentlyPinnedEventIds();
-        $this->assertSame(2, count($eventIds));
+        assertSame(2, count($eventIds));
     }
 }
