@@ -14,7 +14,7 @@ class EventDatabaseManagerTest extends TestCase
     {
         $env = parse_ini_file('.env', true);
         $this->dbm = new TestableEventDatabaseManager($env['event']);
-        $this->getDbm()->createTables();
+        $this->dbm->createTables();
         $this->dbh = new DbTestHelper($this->dbm->client());
 
         $this->dbh->truncateTables(['pins']);
@@ -25,11 +25,6 @@ class EventDatabaseManagerTest extends TestCase
         $this->dbh->truncateTables(['pins']);
     }
 
-    private function getDbm(): TestableEventDatabaseManager
-    {
-        return $this->dbm;
-    }
-
     public function testInsertPin(): void
     {
         $date1 = new DateTime();
@@ -37,10 +32,10 @@ class EventDatabaseManagerTest extends TestCase
         $date3 = new DateTime();
         $date4 = new DateTime();
 
-        $this->getDbm()->insertPin(0);
-        $this->getDbm()->insertPin(1, $date1);
-        $this->getDbm()->insertPin(2, endAt: $date2);
-        $this->getDbm()->insertPin(3, $date3, $date4);
+        $this->dbm->insertPin(0);
+        $this->dbm->insertPin(1, $date1);
+        $this->dbm->insertPin(2, endAt: $date2);
+        $this->dbm->insertPin(3, $date3, $date4);
 
         $this->assertSame(4, $this->dbh->rowCount('pins'));
         $this->assertSame(1, $this->dbh->rowCount(
@@ -64,20 +59,20 @@ class EventDatabaseManagerTest extends TestCase
         $date3 = new DateTime();
         $date4 = new DateTime();
 
-        $this->getDbm()->insertPin(0);
-        $this->getDbm()->insertPin(1, $date1);
-        $this->getDbm()->insertPin(2, endAt: $date2);
-        $this->getDbm()->insertPin(3, $date3, $date4);
+        $this->dbm->insertPin(0);
+        $this->dbm->insertPin(1, $date1);
+        $this->dbm->insertPin(2, endAt: $date2);
+        $this->dbm->insertPin(3, $date3, $date4);
 
         $date5 = new DateTime();
         $date6 = new DateTime();
         $date7 = new DateTime();
         $date8 = new DateTime();
 
-        $this->getDbm()->updatePin(0);
-        $this->getDbm()->updatePin(1, $date5);
-        $this->getDbm()->updatePin(2, endAt: $date6);
-        $this->getDbm()->updatePin(3, $date7, $date8);
+        $this->dbm->updatePin(0);
+        $this->dbm->updatePin(1, $date5);
+        $this->dbm->updatePin(2, endAt: $date6);
+        $this->dbm->updatePin(3, $date7, $date8);
 
         $this->assertSame(4, $this->dbh->rowCount('pins'));
         $this->assertSame(1, $this->dbh->rowCount(
@@ -101,12 +96,12 @@ class EventDatabaseManagerTest extends TestCase
         $date3 = new DateTime();
         $date4 = new DateTime();
 
-        $this->getDbm()->insertPin(0);
-        $this->getDbm()->insertPin(1, $date1);
-        $this->getDbm()->insertPin(2, endAt: $date2);
-        $this->getDbm()->insertPin(3, $date3, $date4);
+        $this->dbm->insertPin(0);
+        $this->dbm->insertPin(1, $date1);
+        $this->dbm->insertPin(2, endAt: $date2);
+        $this->dbm->insertPin(3, $date3, $date4);
 
-        $eventIds = $this->getDbm()->getCurrentlyPinnedEventIds();
+        $eventIds = $this->dbm->getCurrentlyPinnedEventIds();
         $this->assertSame(2, count($eventIds));
     }
 }
