@@ -35,7 +35,7 @@ class Options
         $this->registerId($id);
     }
 
-    public function getIds()
+    public function getIds(): ?array
     {
         return $this->ids;
     }

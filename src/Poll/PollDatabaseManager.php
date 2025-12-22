@@ -11,6 +11,9 @@ use mysqli_sql_exception;
 
 class PollDatabaseManager extends DatabaseManager
 {
+    /**
+     * @throws  mysqli_sql_exception
+     */
     public function createTables(): void
     {
         $statement = $this->getClient()->prepare(
@@ -26,7 +29,7 @@ class PollDatabaseManager extends DatabaseManager
         $statement->close();
 
         $statement = $this->getClient()->prepare(
-            "CREATE TABLE `options` (
+            "CREATE TABLE IF NOT EXISTS `options` (
                 `option_id` INT NOT NULL AUTO_INCREMENT,
                 `poll_id` INT NOT NULL,
                 `text` VARCHAR(4095) NOT NULL,
@@ -38,7 +41,7 @@ class PollDatabaseManager extends DatabaseManager
         $statement->close();
 
         $statement = $this->getClient()->prepare(
-            "CREATE TABLE `votes` (
+            "CREATE TABLE IF NOT EXISTS `votes` (
                 `vote_id` INT NOT NULL AUTO_INCREMENT,
                 `poll_id` INT NOT NULL,
                 `option_id` INT NOT NULL,
@@ -79,21 +82,25 @@ class PollDatabaseManager extends DatabaseManager
      * Return the currently active polls.
      * @return  Poll[]  The currently active polls.
      * @throws  mysqli_sql_exception
-     * @throws Exception
      */
     public function getActivePolls(): array
     {
         $activePolls = array();
         foreach ($this->getActivePollIds() as $id) {
-            $activePolls[] = $this->getPoll($id);
+            try {
+                $activePolls[] = $this->getPoll($id);
+            } catch (Exception $e) {
+                error_log("getActivePolls: " . $e->getMessage());
+                continue;
+            }
         }
         return $activePolls;
     }
 
     /**
-     * @throws Exception
+     * @throws  mysqli_sql_exception
      */
-    public function getMostRecentlyExpiredPoll(): Poll
+    public function getMostRecentlyExpiredPoll(): ?Poll
     {
         $pollId = 0;
 
@@ -103,14 +110,19 @@ class PollDatabaseManager extends DatabaseManager
         $statement->fetch();
         $statement->close();
 
-        return self::getPoll($pollId);
+        try {
+            return self::getPoll($pollId);
+        } catch (Exception $e) {
+            error_log("getMostRecentlyExpiredPoll: " . $e->getMessage());
+            return null;
+        }
     }
 
     /**
      * Return the latest polls. The amount is limited by the given value.
-     * @param   int     $max    The maximum amount of polls to get.
+     * @param int $max The maximum amount of polls to get.
      * @return  Poll[]          Array containing the retrieved polls.
-     * @throws  mysqli_sql_exception|Exception
+     * @throws  mysqli_sql_exception
      */
     public function getLatestPolls(int $max): array
     {
@@ -129,7 +141,12 @@ class PollDatabaseManager extends DatabaseManager
 
         $latestPolls = array();
         foreach ($latestPollIds as $id) {
-            $latestPolls[] = $this->getPoll($id);
+            try {
+                $latestPolls[] = $this->getPoll($id);
+            } catch (Exception $e) {
+                error_log("getLatestPolls: " . $e->getMessage());
+                continue;
+            }
         }
 
         return $latestPolls;
@@ -175,7 +192,7 @@ class PollDatabaseManager extends DatabaseManager
     }
 
     /**
-     * Add a poll. This does not incude the poll's options.
+     * Add a poll. This does not include the poll's options.
      * @param   string      $question   The poll's question.
      * @param   DateTime    $expiresAt  The moment at which the poll expires.
      * @throws  mysqli_sql_exception
@@ -234,27 +251,54 @@ class PollDatabaseManager extends DatabaseManager
     /**
      * Return the poll with the given ID. This includes the poll's options and the vote counts per option,
      * as well as the total vote count.
-     * @param   int     $pollId     ID of the poll to get.
+     * @param int $pollId ID of the poll to get.
      * @return  Poll                The poll with the given ID.
-     * @throws  mysqli_sql_exception|Exception
+     * @throws  mysqli_sql_exception
+     * @throws Exception
      */
     public function getPoll(int $pollId): Poll
     {
-        $question = "";
-        $publishedAt = "";
-        $expiresAt = "";
+        $question       = "";
+        $publishedAt    = "";
+        $expiresAt      = "";
 
         $statement = $this->getClient()->prepare("SELECT `question`, `published_at`, `expires_at` FROM `polls` WHERE `poll_id` = ?");
         $statement->bind_param("i", $pollId);
-        $statement->bind_result($question, $publishedAt, $expiresAt);
         $statement->execute();
-        $statement->fetch();
+        $statement->bind_result($question, $publishedAt, $expiresAt);
+
+        if (!$statement->fetch()) {
+            $statement->close();
+            throw new Exception("Poll $pollId not found");
+        }
+
         $statement->close();
 
-        $options = $this->getOptions($pollId);
-        $options = $this->getVoteCounts($pollId, $options);
-        $pollVoteCount = $this->getPollVoteCount($pollId);
-        return new Poll($pollId, $question, new DateTime($publishedAt), new DateTime($expiresAt), $options, $pollVoteCount);
+        $options            = $this->getOptions($pollId);
+        $optionsVoteCounted = $this->getVoteCounts($pollId, $options);
+        $pollVoteCount      = $this->getPollVoteCount($pollId);
+
+        return new Poll(
+            $pollId,
+            $question,
+            $this->safeDateTime($publishedAt),
+            $this->safeDateTime($expiresAt),
+            $optionsVoteCounted,
+            $pollVoteCount
+        );
+    }
+
+    private function safeDateTime(?string $value): DateTime
+    {
+        if ($value === null || $value === '') {
+            return new DateTime();
+        }
+
+        try {
+            return new DateTime($value);
+        } catch (Exception) {
+            return new DateTime();
+        }
     }
 
     /**
