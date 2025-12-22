@@ -46,7 +46,7 @@ trait RfidTableManager
         $statement->fetch();
         $statement->close();
 
-        if (is_null($congressusMemberId)) {
+        if (is_null($congressusMemberId) || $congressusMemberId === 0) {
             throw new CardNotRegisteredException;
         }
 
