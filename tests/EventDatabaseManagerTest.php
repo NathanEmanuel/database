@@ -14,11 +14,13 @@ class EventDatabaseManagerTest extends TestCase
     protected function setUp(): void
     {
         $env = parse_ini_file('.env', true);
-        $this->dbm = new TestableEventDatabaseManager($env['event']);
-        $this->dbm->createTables();
-        $this->dbh = new DbTestHelper($this->dbm->client());
+        if ($env) {
+            $this->dbm = new TestableEventDatabaseManager($env['event']);
+            $this->dbm->createTables();
+            $this->dbh = new DbTestHelper($this->dbm->client());
 
-        $this->dbh->truncateTables(['pins']);
+            $this->dbh->truncateTables(['pins']);
+        }
     }
 
     protected function tearDown(): void

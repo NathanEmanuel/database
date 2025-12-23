@@ -15,6 +15,9 @@ use JsonSerializable;
  */
 class ProductSales implements JsonSerializable
 {
+    /**
+     * @var array<mixed>
+     */
     private array $data = array();
     private int $presentYear;
 
@@ -48,6 +51,11 @@ class ProductSales implements JsonSerializable
         return $this->data[$productId];
     }
 
+    /**
+     * @param int $productId
+     * @param int|null $year
+     * @return array<mixed>
+     */
     public function &getDataByYear(int $productId, int $year = null): array
     {
         $year = $year ?? $this->presentYear;
@@ -61,7 +69,7 @@ class ProductSales implements JsonSerializable
         return $data[$year];
     }
 
-    public function &getDataByWeek(string $key, int $productId, int $week, int $year = null): int|string
+    public function &getDataByWeek(string $key, int $productId, int $week, int $year = null): float|int|string
     {
         $year = $year ?? $this->presentYear;
 
@@ -77,12 +85,18 @@ class ProductSales implements JsonSerializable
 
     // Main setters
 
+    /**
+     * @param array<mixed> $data
+     * @param int $productId
+     * @param int $year
+     * @return void
+     */
     public function setDataByYear(array $data, int $productId, int $year): void
     {
         $this->data[$productId][$year] = $data;
     }
 
-    public function setDataByWeek(string $key, int|string $data, int $productId, int $week, int $year = null): void
+    public function setDataByWeek(string $key, float|int|string $data, int $productId, int $week, int $year = null): void
     {
         $year = $year ?? $this->presentYear;
 
@@ -95,7 +109,7 @@ class ProductSales implements JsonSerializable
 
     public function getQuantityByWeek(int $productId, int $week, int $year = null): int
     {
-        return $this->getDataByWeek("quantity", $productId, $week, $year);
+        return (int) $this->getDataByWeek("quantity", $productId, $week, $year);
     }
 
     public function setQuantityByWeek(int $quantity, int $productId, int $week, int $year = null): void

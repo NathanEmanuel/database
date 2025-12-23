@@ -27,8 +27,10 @@ class PollDatabaseManager extends DatabaseManager
                 PRIMARY KEY (poll_id)
             );"
         );
-        $statement->execute();
-        $statement->close();
+        if ($statement){
+            $statement->execute();
+            $statement->close();
+        }
 
         $statement = $this->getClient()->prepare(
             "CREATE TABLE IF NOT EXISTS `options` (
@@ -39,8 +41,10 @@ class PollDatabaseManager extends DatabaseManager
                 FOREIGN KEY (poll_id) REFERENCES polls(poll_id)
             );"
         );
-        $statement->execute();
-        $statement->close();
+        if ($statement){
+            $statement->execute();
+            $statement->close();
+        }
 
         $statement = $this->getClient()->prepare(
             "CREATE TABLE IF NOT EXISTS `votes` (
@@ -54,8 +58,10 @@ class PollDatabaseManager extends DatabaseManager
                 FOREIGN KEY (option_id) REFERENCES options(option_id)
             );"
         );
-        $statement->execute();
-        $statement->close();
+        if ($statement){
+            $statement->execute();
+            $statement->close();
+        }
     }
 
     /**
@@ -66,16 +72,18 @@ class PollDatabaseManager extends DatabaseManager
     public function getActivePollIds(): array
     {
         $activePollId = 0;
+        $activePollIds = array();
 
         $statement = $this->getClient()->prepare("SELECT `poll_id` FROM `polls` WHERE `expires_at` > NOW() OR `expires_at` IS NULL");
-        $statement->bind_result($activePollId);
-        $statement->execute();
+        if ($statement){
+            $statement->bind_result($activePollId);
+            $statement->execute();
 
-        $activePollIds = array();
-        while ($statement->fetch()) {
-            $activePollIds[] = $activePollId;
+            while ($statement->fetch()) {
+                $activePollIds[] = $activePollId;
+            }
+            $statement->close();
         }
-        $statement->close();
 
         return $activePollIds;
     }
@@ -107,17 +115,20 @@ class PollDatabaseManager extends DatabaseManager
         $pollId = 0;
 
         $statement = $this->getClient()->prepare("SELECT `poll_id` FROM `polls` WHERE NOW() > `expires_at` ORDER BY `expires_at` DESC LIMIT 1");
-        $statement->bind_result($pollId);
-        $statement->execute();
-        $statement->fetch();
-        $statement->close();
+        if ($statement){
+            $statement->bind_result($pollId);
+            $statement->execute();
+            $statement->fetch();
+            $statement->close();
 
-        try {
-            return self::getPoll($pollId);
-        } catch (Exception $e) {
-            makeErrorLogging("getMostRecentlyExpiredPoll", $e);
-            return null;
+            try {
+                return self::getPoll($pollId);
+            } catch (Exception $e) {
+                makeErrorLogging("getMostRecentlyExpiredPoll", $e);
+                return null;
+            }
         }
+        return null;
     }
 
     /**
@@ -129,25 +140,27 @@ class PollDatabaseManager extends DatabaseManager
     public function getLatestPolls(int $max): array
     {
         $pollId = 0;
+        $latestPolls = array();
 
         $statement = $this->getClient()->prepare("SELECT `poll_id` FROM `polls` ORDER BY `poll_id` DESC LIMIT ?");
-        $statement->bind_param("i", $max);
-        $statement->bind_result($pollId);
-        $statement->execute();
+        if ($statement) {
+            $statement->bind_param("i", $max);
+            $statement->bind_result($pollId);
+            $statement->execute();
 
-        $latestPollIds = array();
-        while ($statement->fetch()) {
-            $latestPollIds[] = $pollId;
-        }
-        $statement->close();
+            $latestPollIds = array();
+            while ($statement->fetch()) {
+                $latestPollIds[] = $pollId;
+            }
+            $statement->close();
 
-        $latestPolls = array();
-        foreach ($latestPollIds as $id) {
-            try {
-                $latestPolls[] = $this->getPoll($id);
-            } catch (Exception $e) {
-                makeErrorLogging("getLatestPolls", $e);
-                continue;
+            foreach ($latestPollIds as $id) {
+                try {
+                    $latestPolls[] = $this->getPoll($id);
+                } catch (Exception $e) {
+                    makeErrorLogging("getLatestPolls", $e);
+                    continue;
+                }
             }
         }
 
@@ -166,11 +179,14 @@ class PollDatabaseManager extends DatabaseManager
         $voteCount = 0;
 
         $statement = $this->getClient()->prepare("SELECT COUNT(*) FROM `votes` WHERE `poll_id` = ? AND `user_id` = ?");
-        $statement->bind_param("ii", $pollId, $userId);
-        $statement->bind_result($voteCount);
-        $statement->execute();
-        $statement->fetch();
-        $statement->close();
+        if ($statement) {
+            $statement->bind_param("ii", $pollId, $userId);
+            $statement->bind_result($voteCount);
+            $statement->execute();
+            $statement->fetch();
+            $statement->close();
+
+        }
 
         return $voteCount > 0;
     }
@@ -202,10 +218,12 @@ class PollDatabaseManager extends DatabaseManager
     public function addPoll(string $question, DateTime $expiresAt): void
     {
         $statement = $this->getClient()->prepare("INSERT INTO `polls` (`question`, `expires_at`) VALUES (?, ?)");
-        $format = $expiresAt->format(self::SQL_DATETIME_FORMAT);
-        $statement->bind_param("ss", $question, $format);
-        $statement->execute();
-        $statement->close();
+        if ($statement) {
+            $format = $expiresAt->format(self::SQL_DATETIME_FORMAT);
+            $statement->bind_param("ss", $question, $format);
+            $statement->execute();
+            $statement->close();
+        }
     }
 
     /**
@@ -217,9 +235,11 @@ class PollDatabaseManager extends DatabaseManager
     public function addOption(int $pollId, string $text): void
     {
         $statement = $this->getClient()->prepare("INSERT INTO `options` (`poll_id`, `text`) VALUES (?, ?)");
-        $statement->bind_param("is", $pollId, $text);
-        $statement->execute();
-        $statement->close();
+        if ($statement) {
+            $statement->bind_param("is", $pollId, $text);
+            $statement->execute();
+            $statement->close();
+        }
     }
 
     /**
@@ -230,9 +250,11 @@ class PollDatabaseManager extends DatabaseManager
     public function deleteOption(int $optionId): void
     {
         $statement = $this->getClient()->prepare("DELETE FROM `options` WHERE `option_id` = ?");
-        $statement->bind_param("i", $optionId);
-        $statement->execute();
-        $statement->close();
+        if ($statement) {
+            $statement->bind_param("i", $optionId);
+            $statement->execute();
+            $statement->close();
+        }
     }
 
     /**
@@ -245,9 +267,11 @@ class PollDatabaseManager extends DatabaseManager
     public function addVote(int $pollId, int $userId, int $optionId): void
     {
         $statement = $this->getClient()->prepare("INSERT INTO `votes` (`poll_id`, `user_id`, `option_id`) VALUES (?, ?, ?)");
-        $statement->bind_param("iii", $pollId, $userId, $optionId);
-        $statement->execute();
-        $statement->close();
+        if ($statement) {
+            $statement->bind_param("iii", $pollId, $userId, $optionId);
+            $statement->execute();
+            $statement->close();
+        }
     }
 
     /**
@@ -265,16 +289,18 @@ class PollDatabaseManager extends DatabaseManager
         $expiresAt      = "";
 
         $statement = $this->getClient()->prepare("SELECT `question`, `published_at`, `expires_at` FROM `polls` WHERE `poll_id` = ?");
-        $statement->bind_param("i", $pollId);
-        $statement->execute();
-        $statement->bind_result($question, $publishedAt, $expiresAt);
+        if ($statement) {
+            $statement->bind_param("i", $pollId);
+            $statement->execute();
+            $statement->bind_result($question, $publishedAt, $expiresAt);
 
-        if (!$statement->fetch()) {
+            if (!$statement->fetch()) {
+                $statement->close();
+                throw new Exception("Poll $pollId not found");
+            }
+
             $statement->close();
-            throw new Exception("Poll $pollId not found");
         }
-
-        $statement->close();
 
         $options            = $this->getOptions($pollId);
         $optionsVoteCounted = $this->getVoteCounts($pollId, $options);
@@ -300,17 +326,19 @@ class PollDatabaseManager extends DatabaseManager
     {
         $id = 0;
         $answer = "";
+        $options = new Options();
 
         $statement = $this->getClient()->prepare("SELECT `option_id`, `text` FROM `options` WHERE `poll_id` = ?");
-        $statement->bind_param("i", $pollId);
-        $statement->bind_result($id, $answer);
-        $statement->execute();
+        if ($statement) {
+            $statement->bind_param("i", $pollId);
+            $statement->bind_result($id, $answer);
+            $statement->execute();
 
-        $options = new Options();
-        while ($statement->fetch()) {
-            $options->setText($id, $answer);
+            while ($statement->fetch()) {
+                $options->setText($id, $answer);
+            }
+            $statement->close();
         }
-        $statement->close();
 
         return $options;
     }
@@ -329,15 +357,17 @@ class PollDatabaseManager extends DatabaseManager
         $optionId = 0;
 
         $statement = $this->getClient()->prepare("SELECT COUNT(*) FROM `votes` WHERE `poll_id` = ? AND `option_id` = ?");
-        $statement->bind_param("ii", $pollId, $optionId);
-        $statement->bind_result($voteCount);
+        if ($statement) {
+            $statement->bind_param("ii", $pollId, $optionId);
+            $statement->bind_result($voteCount);
 
-        foreach ($options->getIds() as $optionId) {
-            $statement->execute();
-            $statement->fetch();
-            $options->setVoteCount($optionId, $voteCount);
+            foreach ($options->getIds() as $optionId) {
+                $statement->execute();
+                $statement->fetch();
+                $options->setVoteCount($optionId, $voteCount);
+            }
+            $statement->close();
         }
-        $statement->close();
 
         return $options;
     }
@@ -353,11 +383,13 @@ class PollDatabaseManager extends DatabaseManager
         $voteCount = 0;
 
         $statement = $this->getClient()->prepare("SELECT COUNT(*) FROM `votes` WHERE `poll_id` = ?");
-        $statement->bind_param("i", $pollId);
-        $statement->bind_result($voteCount);
-        $statement->execute();
-        $statement->fetch();
-        $statement->close();
+        if ($statement) {
+            $statement->bind_param("i", $pollId);
+            $statement->bind_result($voteCount);
+            $statement->execute();
+            $statement->fetch();
+            $statement->close();
+        }
 
         return $voteCount;
     }
@@ -370,8 +402,10 @@ class PollDatabaseManager extends DatabaseManager
     public function expirePoll(int $pollId): void
     {
         $statement = $this->getClient()->prepare("UPDATE `polls` SET `expires_at` = NOW() WHERE `poll_id` = ?");
-        $statement->bind_param("i", $pollId);
-        $statement->execute();
-        $statement->close();
+        if ($statement) {
+            $statement->bind_param("i", $pollId);
+            $statement->execute();
+            $statement->close();
+        }
     }
 }

@@ -7,6 +7,7 @@ use DateTime;
 use Exception;
 use PHPUnit\Framework\TestCase;
 use function PHPUnit\Framework\assertFalse;
+use function PHPUnit\Framework\assertNotNull;
 use function PHPUnit\Framework\assertSame;
 use function PHPUnit\Framework\assertTrue;
 
@@ -18,11 +19,13 @@ class PollDatabaseManagerTest extends TestCase
     protected function setUp(): void
     {
         $env = parse_ini_file(".env", true);
-        $this->dbm = new TestablePollDatabaseManager($env['poll']);
-        $this->dbm->createTables();
-        $this->dbh = new DbTestHelper($this->dbm->client());
+        if ($env) {
+            $this->dbm = new TestablePollDatabaseManager($env['poll']);
+            $this->dbm->createTables();
+            $this->dbh = new DbTestHelper($this->dbm->client());
 
-        $this->dbh->truncateTables(['options', 'polls', 'votes']);
+            $this->dbh->truncateTables(['options', 'polls', 'votes']);
+        }
     }
 
     protected function tearDown(): void
@@ -97,13 +100,14 @@ class PollDatabaseManagerTest extends TestCase
         $date3 = (new DateTime())->add(new DateInterval("PT2S"));
         $this->dbm->addPoll($question3, $date3);
 
-        sleep(2);
+        sleep(5);
 
         $poll = $this->dbm->getMostRecentlyExpiredPoll();
+        assertNotNull($poll);
         assertSame(3, $poll->getId());
     }
 
-    function testGetLatestPolls()
+    function testGetLatestPolls(): void
     {
         $question1 = "Is this a poll?";
         $date1 = new DateTime();
@@ -121,7 +125,7 @@ class PollDatabaseManagerTest extends TestCase
         assertSame(2, count($polls));
     }
 
-    function testHasUserVoted()
+    function testHasUserVoted(): void
     {
         $this->dbm->addPoll("Is this a poll?", new DateTime());
         $this->dbm->addOption(1, "Yes");
@@ -142,7 +146,7 @@ class PollDatabaseManagerTest extends TestCase
         assertFalse($notVoted);
     }
 
-    function testGetVotablePollIds()
+    function testGetVotablePollIds(): void
     {
         $this->dbm->addPoll("Is this a poll?", (new DateTime())->add(new DateInterval("PT1H")));
         $this->dbm->addOption(1, "Yes");
@@ -164,7 +168,7 @@ class PollDatabaseManagerTest extends TestCase
         assertSame(1, count($ids));
     }
 
-    function testAddPoll()
+    function testAddPoll(): void
     {
         //published_at has UTC timestamp
         $question1 = "Is this a poll?";
@@ -179,7 +183,7 @@ class PollDatabaseManagerTest extends TestCase
         );
     }
 
-    function testAddOption()
+    function testAddOption(): void
     {
         $this->dbm->addPoll("Is this a poll?", new DateTime());
 
@@ -199,7 +203,7 @@ class PollDatabaseManagerTest extends TestCase
         );
     }
 
-    function testDeleteOption()
+    function testDeleteOption(): void
     {
         $this->dbm->addPoll("Is this a poll?", new DateTime());
 
@@ -231,7 +235,7 @@ class PollDatabaseManagerTest extends TestCase
         );
     }
 
-    function testAddVote()
+    function testAddVote(): void
     {
         $this->dbm->addPoll("Is this a poll?", new DateTime());
         $this->dbm->addOption(1, "Yes");
@@ -258,7 +262,7 @@ class PollDatabaseManagerTest extends TestCase
     /**
      * @throws Exception
      */
-    function testGetPoll()
+    function testGetPoll(): void
     {
         $question1 = "Is this a poll?";
         $date1 = new DateTime();
@@ -289,14 +293,14 @@ class PollDatabaseManagerTest extends TestCase
         assertSame(3, $poll->getVoteCount());
     }
 
-    function testGetPollNotFound()
+    function testGetPollNotFound(): void
     {
         $this->expectException(Exception::class);
         $this->expectExceptionMessage('Poll 1 not found');
         $this->dbm->getPoll(1);
     }
 
-    function testExpirePoll()
+    function testExpirePoll(): void
     {
         $question1 = "Is this a poll?";
         $date1 = new DateTime();

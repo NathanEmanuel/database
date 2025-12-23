@@ -19,8 +19,10 @@ trait BirthdaysTableManager
                 PRIMARY KEY (`id`)
             );"
         );
-        $statement->execute();
-        $statement->close();
+        if ($statement){
+            $statement->execute();
+            $statement->close();
+        }
     }
 
     /**
@@ -31,21 +33,24 @@ trait BirthdaysTableManager
     public function getMemberIdsWithBirthdayToday(): array
     {
         $memberId = 0;
+        $memberIds = array();
 
         $statement = $this->getClient()->prepare(
             "SELECT `member_id` FROM `screen_birthdays`
             WHERE DAY(date_of_birth) = DAY(CURRENT_DATE())
 		    AND MONTH(date_of_birth) = MONTH(CURRENT_DATE());"
         );
-        $statement->bind_result($memberId);
-        $statement->execute();
+        if ($statement) {
+            $statement->bind_result($memberId);
+            $statement->execute();
 
-        $memberIds = array();
-        while ($statement->fetch()) {
-            $memberIds[] = $memberId;
+            while ($statement->fetch()) {
+                $memberIds[] = $memberId;
+            }
+
+            $statement->close();
         }
 
-        $statement->close();
         return $memberIds;
     }
 }

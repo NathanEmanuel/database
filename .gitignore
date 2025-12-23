@@ -3,3 +3,6 @@
 beun.php
 .env
 tests/.env
+/var
+.phpunit.result.cache
+.phpunit.cache

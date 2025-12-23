@@ -16,11 +16,13 @@ class MemberDatabaseManagerTest extends TestCase
     protected function setUp(): void
     {
         $env = parse_ini_file(".env", true);
-        $this->dbm = new TestableMemberDatabaseManager($env['member']);
-        $this->dbm->createTables();
-        $this->dbh = new DbTestHelper($this->dbm->client());
+        if ($env) {
+            $this->dbm = new TestableMemberDatabaseManager($env['member']);
+            $this->dbm->createTables();
+            $this->dbh = new DbTestHelper($this->dbm->client());
 
-        $this->dbh->truncateTables(['screen_birthdays','rfid']);
+            $this->dbh->truncateTables(['screen_birthdays', 'rfid']);
+        }
     }
 
     protected function tearDown(): void

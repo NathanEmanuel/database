@@ -8,8 +8,7 @@ use DateTime;
 use Exception;
 use PHPUnit\Framework\TestCase;
 
-use function PHPUnit\Framework\assertGreaterThan;
-use function PHPUnit\Framework\assertJsonStringEqualsJsonString;
+use function PHPUnit\Framework\assertNotNull;
 use function PHPUnit\Framework\assertSame;
 
 class SaleDatabaseManagerTest extends TestCase
@@ -20,16 +19,18 @@ class SaleDatabaseManagerTest extends TestCase
     protected function setUp(): void
     {
         $env = parse_ini_file(".env", true);
-        $this->dbm = new TestableSaleDatabaseManager($env['sale']);
-        $this->dbm->createTables();
-        $this->dbh = new DbTestHelper($this->dbm->client());
+        if ($env) {
+            $this->dbm = new TestableSaleDatabaseManager($env['sale']);
+            $this->dbm->createTables();
+            $this->dbh = new DbTestHelper($this->dbm->client());
 
-        $this->dbh->truncateTables(['purchases', 'purchase_items']);
+            $this->dbh->truncateTables(['purchases', 'purchase_items']);
+        }
     }
 
     protected function tearDown(): void
     {
-//        $this->dbh->truncateTables(['purchases', 'purchase_items']);
+        $this->dbh->truncateTables(['purchases', 'purchase_items']);
     }
 
     /**
@@ -43,7 +44,9 @@ class SaleDatabaseManagerTest extends TestCase
         assertSame(1, $this->dbh->rowCount('purchases'));
         assertSame(1, $purchaseId);
         assertSame(1, $purchase->getPurchaseId());
-        assertSame((new DateTime())->format("Y-m-d"), $purchase->getPurchasedAt()->format('Y-m-d'));
+        $purchasedAt = $purchase->getPurchasedAt();
+        assertNotNull($purchasedAt);
+        assertSame((new DateTime())->format("Y-m-d"), $purchasedAt->format('Y-m-d'));
         assertSame(null, $purchase->getPrice());
     }
 
@@ -86,7 +89,9 @@ class SaleDatabaseManagerTest extends TestCase
             'purchases', 'purchase_id = 1 AND purchased_at = ? AND price = ?',[$date->format('Y-m-d H:i:s'), $price])
         );
         assertSame(1, $purchase->getPurchaseId());
-        assertSame((new DateTime())->format("Y-m-d"), $purchase->getPurchasedAt()->format('Y-m-d'));
+        $purchasedAt = $purchase->getPurchasedAt();
+        assertNotNull($purchasedAt);
+        assertSame((new DateTime())->format("Y-m-d"), $purchasedAt->format('Y-m-d'));
         assertSame(5.57, $purchase->getPrice());
     }
 
@@ -159,24 +164,25 @@ class SaleDatabaseManagerTest extends TestCase
         $purchaseId1 = $this->dbm->insertPurchase();
         $currentYear = (int) (new DateTime())->format("Y");
         $this->dbm->updatePurchase($purchaseId1, $this->getIsoDatetime($currentYear, 33));
-        $this->dbm->insertPurchaseItem($purchaseId1, 1, 10, "3 Cookies", 69);
-        $this->dbm->insertPurchaseItem($purchaseId1, 1, 5,  "3 Cookies", 69);
-        $this->dbm->insertPurchaseItem($purchaseId1, 2, 3,  "3 Cookies", 69);
+        $this->dbm->insertPurchaseItem($purchaseId1, 1, 10, "3 Cookies", 0.69);
+        $this->dbm->insertPurchaseItem($purchaseId1, 1, 5,  "3 Cookies", 0.69);
+        $this->dbm->insertPurchaseItem($purchaseId1, 2, 3,  "3 Cookies", 0.69);
 
         $currentWeek = 34;
         $weekCount = 8;
 
         $productSales = $this->dbm->selectProductSalesOfLastWeeks([1, 2], $weekCount, $currentWeek);
+        echo $productSales->asJson();
         assertSame(15, $productSales->getQuantityByWeek(1, 33));
         assertSame("3 Cookies", $productSales->getNameByWeek(1, 33));
-        assertSame(69, $productSales->getUnitPriceByWeek(1, 33));
+        assertSame(0.69, $productSales->getUnitPriceByWeek(1, 33));
 
         assertSame(3, $productSales->getQuantityByWeek(2, 33, $currentYear));
         assertSame("3 Cookies", $productSales->getNameByWeek(2, 33));
-        assertSame(69, $productSales->getUnitPriceByWeek(2, 33));
+        assertSame(0.69, $productSales->getUnitPriceByWeek(2, 33));
 
         assertSame(
-            '{"1":{"2025":{"26":{"quantity":0,"name":"","unitPrice":0},"27":{"quantity":0,"name":"","unitPrice":0},"28":{"quantity":0,"name":"","unitPrice":0},"29":{"quantity":0,"name":"","unitPrice":0},"30":{"quantity":0,"name":"","unitPrice":0},"31":{"quantity":0,"name":"","unitPrice":0},"32":{"quantity":0,"name":"","unitPrice":0},"33":{"quantity":15,"name":"3 Cookies","unitPrice":69},"34":{"quantity":0,"name":"","unitPrice":0}}},"2":{"2025":{"26":{"quantity":0,"name":"","unitPrice":0},"27":{"quantity":0,"name":"","unitPrice":0},"28":{"quantity":0,"name":"","unitPrice":0},"29":{"quantity":0,"name":"","unitPrice":0},"30":{"quantity":0,"name":"","unitPrice":0},"31":{"quantity":0,"name":"","unitPrice":0},"32":{"quantity":0,"name":"","unitPrice":0},"33":{"quantity":3,"name":"3 Cookies","unitPrice":69},"34":{"quantity":0,"name":"","unitPrice":0}}}}',
+            '{"1":{"2025":{"26":{"quantity":0,"name":"","unitPrice":0},"27":{"quantity":0,"name":"","unitPrice":0},"28":{"quantity":0,"name":"","unitPrice":0},"29":{"quantity":0,"name":"","unitPrice":0},"30":{"quantity":0,"name":"","unitPrice":0},"31":{"quantity":0,"name":"","unitPrice":0},"32":{"quantity":0,"name":"","unitPrice":0},"33":{"quantity":15,"name":"3 Cookies","unitPrice":0.69},"34":{"quantity":0,"name":"","unitPrice":0}}},"2":{"2025":{"26":{"quantity":0,"name":"","unitPrice":0},"27":{"quantity":0,"name":"","unitPrice":0},"28":{"quantity":0,"name":"","unitPrice":0},"29":{"quantity":0,"name":"","unitPrice":0},"30":{"quantity":0,"name":"","unitPrice":0},"31":{"quantity":0,"name":"","unitPrice":0},"32":{"quantity":0,"name":"","unitPrice":0},"33":{"quantity":3,"name":"3 Cookies","unitPrice":0.69},"34":{"quantity":0,"name":"","unitPrice":0}}}}',
             $productSales->asJson()
         );
     }
@@ -190,17 +196,17 @@ class SaleDatabaseManagerTest extends TestCase
         $purchaseId1 = $this->dbm->insertPurchase();
         $previousYear = (int) (new DateTime())->sub(new DateInterval("P1Y"))->format("Y");
         $this->dbm->updatePurchase($purchaseId1, $this->getIsoDatetime($previousYear, 52));
-        $this->dbm->insertPurchaseItem($purchaseId1, 1, 3, "3 Cookies", 69);
+        $this->dbm->insertPurchaseItem($purchaseId1, 1, 3, "3 Cookies", 0.69);
 
         $weekCount = 8;
         $currentWeek = 4;
         $productSales = $this->dbm->selectProductSalesOfLastWeeks([1], $weekCount, $currentWeek);
         assertSame(3, $productSales->getQuantityByWeek(1, 52, $previousYear));
         assertSame("3 Cookies", $productSales->getNameByWeek(1, 52, $previousYear));
-        assertSame(69, $productSales->getUnitPriceByWeek(1, 52, $previousYear));
+        assertSame(0.69, $productSales->getUnitPriceByWeek(1, 52, $previousYear));
 
         assertSame(
-            '{"1":{"2024":{"49":{"quantity":0,"name":"","unitPrice":0},"50":{"quantity":0,"name":"","unitPrice":0},"51":{"quantity":0,"name":"","unitPrice":0},"52":{"quantity":3,"name":"3 Cookies","unitPrice":69}},"2025":{"1":{"quantity":0,"name":"","unitPrice":0},"2":{"quantity":0,"name":"","unitPrice":0},"3":{"quantity":0,"name":"","unitPrice":0},"4":{"quantity":0,"name":"","unitPrice":0}}}}',
+            '{"1":{"2024":{"49":{"quantity":0,"name":"","unitPrice":0},"50":{"quantity":0,"name":"","unitPrice":0},"51":{"quantity":0,"name":"","unitPrice":0},"52":{"quantity":3,"name":"3 Cookies","unitPrice":0.69}},"2025":{"1":{"quantity":0,"name":"","unitPrice":0},"2":{"quantity":0,"name":"","unitPrice":0},"3":{"quantity":0,"name":"","unitPrice":0},"4":{"quantity":0,"name":"","unitPrice":0}}}}',
             $productSales->asJson()
         );
     }
@@ -218,19 +224,19 @@ class SaleDatabaseManagerTest extends TestCase
         $purchaseId1 = $this->dbm->insertPurchase();
         $currentYear = (int) (new DateTime())->format("Y");
         $this->dbm->updatePurchase($purchaseId1, $this->getIsoDatetime($currentYear, 33));
-        $this->dbm->insertPurchaseItem($purchaseId1, 1, 10, "3 Cookies", 69);
-        $this->dbm->insertPurchaseItem($purchaseId1, 1, 5,  "3 Cookies", 69);
-        $this->dbm->insertPurchaseItem($purchaseId1, 2, 3,  "3 Cookies", 69);
+        $this->dbm->insertPurchaseItem($purchaseId1, 1, 10, "3 Cookies", 0.69);
+        $this->dbm->insertPurchaseItem($purchaseId1, 1, 5,  "3 Cookies", 0.69);
+        $this->dbm->insertPurchaseItem($purchaseId1, 2, 3,  "3 Cookies", 0.69);
 
         $week = 33;
         $productSales = $this->dbm->selectProductSalesByWeek([1, 2], [$week]);
 
         assertSame(15, $productSales->getQuantityByWeek(1, $week));
         assertSame("3 Cookies", $productSales->getNameByWeek(1, $week));
-        assertSame(69, $productSales->getUnitPriceByWeek(1, $week));
+        assertSame(0.69, $productSales->getUnitPriceByWeek(1, $week));
 
         assertSame(3, $productSales->getQuantityByWeek(2, $week, $currentYear));
         assertSame("3 Cookies", $productSales->getNameByWeek(2, $week));
-        assertSame(69, $productSales->getUnitPriceByWeek(2, $week));
+        assertSame(0.69, $productSales->getUnitPriceByWeek(2, $week));
     }
 }

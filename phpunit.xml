@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<phpunit backupGlobals="false"
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
          bootstrap="tests\bootstrap\autoload.php"
          colors="true"
-         processIsolation="false"
-         stopOnFailure="false">
+         failOnWarning="true"
+         failOnNotice="true"
+         failOnDeprecation="true"
+         cacheDirectory=".phpunit.cache"
+>
     <php>
         <ini name="display_errors" value="1" />
         <ini name="error_reporting" value="-1"/>

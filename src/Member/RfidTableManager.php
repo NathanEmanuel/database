@@ -24,8 +24,10 @@ trait RfidTableManager
                 PRIMARY KEY (`card_id`)
             );"
         );
-        $statement->execute();
-        $statement->close();
+        if ($statement){
+            $statement->execute();
+            $statement->close();
+        }
     }
 
     /**
@@ -40,14 +42,16 @@ trait RfidTableManager
         $congressusMemberId = 0;
 
         $statement = $this->getClient()->prepare("SELECT `congressus_member_id` FROM `rfid` WHERE `card_id` = ?");
-        $statement->bind_param("s", $cardId);
-        $statement->bind_result($congressusMemberId);
-        $statement->execute();
-        $statement->fetch();
-        $statement->close();
+        if ($statement) {
+            $statement->bind_param("s", $cardId);
+            $statement->bind_result($congressusMemberId);
+            $statement->execute();
+            $statement->fetch();
+            $statement->close();
 
-        if (is_null($congressusMemberId) || $congressusMemberId === 0) {
-            throw new CardNotRegisteredException;
+            if (is_null($congressusMemberId) || $congressusMemberId === 0) {
+                throw new CardNotRegisteredException;
+            }
         }
 
         return $congressusMemberId;
@@ -64,11 +68,13 @@ trait RfidTableManager
         $count = 0;
 
         $statement = $this->getClient()->prepare("SELECT COUNT(*) FROM `rfid` WHERE `card_id` = ? AND `is_email_confirmed` = TRUE");
-        $statement->bind_param("s", $cardId);
-        $statement->bind_result($count);
-        $statement->execute();
-        $statement->fetch();
-        $statement->close();
+        if ($statement) {
+            $statement->bind_param("s", $cardId);
+            $statement->bind_result($count);
+            $statement->execute();
+            $statement->fetch();
+            $statement->close();
+        }
 
         return $count > 0;
     }
@@ -112,9 +118,11 @@ trait RfidTableManager
     public function insertRfid(string $cardId, int $congressusMemberId, string $hashedActivationToken, DateTime $activationTokenValidUntil, bool $isEmailConfirmed = FALSE): void
     {
         $statement = $this->getClient()->prepare("INSERT INTO `rfid` (`card_id`, `congressus_member_id`, `hashed_activation_token`, `activation_token_valid_until`, `is_email_confirmed`) VALUES (?, ?, ?, ?, ?)");
-        $statement->bind_param("sissi", $cardId, $congressusMemberId, $hashedActivationToken, $activationTokenValidUntil->format("Y-m-d H:i:s"), $isEmailConfirmed);
-        $statement->execute();
-        $statement->close();
+        if ($statement) {
+            $statement->bind_param("sissi", $cardId, $congressusMemberId, $hashedActivationToken, $activationTokenValidUntil->format("Y-m-d H:i:s"), $isEmailConfirmed);
+            $statement->execute();
+            $statement->close();
+        }
     }
 
     /**
@@ -125,9 +133,11 @@ trait RfidTableManager
     public function activateCard(string $cardId): void
     {
         $statement = $this->getClient()->prepare("UPDATE `rfid` SET `is_email_confirmed` = TRUE, `hashed_activation_token` = NULL, `activation_token_valid_until` = NULL WHERE `card_id` = ?");
-        $statement->bind_param("s", $cardId);
-        $statement->execute();
-        $statement->close();
+        if ($statement) {
+            $statement->bind_param("s", $cardId);
+            $statement->execute();
+            $statement->close();
+        }
     }
 
     /**
@@ -151,9 +161,11 @@ trait RfidTableManager
     public function deleteMembersActivatedRegistrations(int $congressusMemberId): void
     {
         $statement = $this->getClient()->prepare("DELETE FROM `rfid` WHERE `congressus_member_id` = ? AND `is_email_confirmed` = TRUE");
-        $statement->bind_param("i", $congressusMemberId);
-        $statement->execute();
-        $statement->close();
+        if ($statement) {
+            $statement->bind_param("i", $congressusMemberId);
+            $statement->execute();
+            $statement->close();
+        }
     }
 }
 

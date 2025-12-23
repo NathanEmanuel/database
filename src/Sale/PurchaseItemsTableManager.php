@@ -29,8 +29,10 @@ trait PurchaseItemsTableManager
                 FOREIGN KEY (`purchase_id`) REFERENCES purchases(`purchase_id`)
             );"
         );
-        $statement->execute();
-        $statement->close();
+        if ($statement) {
+            $statement->execute();
+            $statement->close();
+        }
     }
 
     /**
@@ -39,12 +41,18 @@ trait PurchaseItemsTableManager
     public function insertPurchaseItem(int $purchaseId, int $productId, int $quantity = 1, ?string $name = null, ?float $unitPrice = null): void
     {
         $statement = $this->getClient()->prepare("INSERT INTO `purchase_items` (`purchase_id`, `product_id`, `quantity`, `name`, `unit_price`) VALUES (?, ?, ?, ?, ?);");
-        $statement->bind_param("iiisd", $purchaseId, $productId, $quantity, $name, $unitPrice);
-        $statement->execute();
-        $statement->close();
+        if ($statement) {
+            $statement->bind_param("iiisd", $purchaseId, $productId, $quantity, $name, $unitPrice);
+            $statement->execute();
+            $statement->close();
+        }
     }
 
     /**
+     * @param array<int> $productIds
+     * @param int $weekCount
+     * @param int|null $currentWeek
+     * @return ProductSales
      * @throws WeekDoesNotExistException
      */
     public function selectProductSalesOfLastWeeks(array $productIds, int $weekCount, int $currentWeek = null): ProductSales
@@ -95,19 +103,21 @@ trait PurchaseItemsTableManager
             WHERE `product_id` = ?
             AND `purchase_id` IN (SELECT `purchase_id` FROM `purchases` WHERE `purchased_at` BETWEEN ? AND ?);"
         );
-        foreach ($productIds as $productId) {
-            foreach ($weeks as $week) {
-                $quantity = 0;
+        if ($statement) {
+            foreach ($productIds as $productId) {
+                foreach ($weeks as $week) {
+                    $quantity = 0;
 
-                $weekDates = self::getWeekDates($week, $year);
-                $statement->bind_param("iss", $productId, $weekDates['start'], $weekDates['end']);
-                $statement->bind_result($quantity);
-                $statement->execute();
-                $statement->fetch();
-                $productSales->setQuantityByWeek($quantity ?? 0, $productId, $week, $year);
+                    $weekDates = self::getWeekDates($week, $year);
+                    $statement->bind_param("iss", $productId, $weekDates['start'], $weekDates['end']);
+                    $statement->bind_result($quantity);
+                    $statement->execute();
+                    $statement->fetch();
+                    $productSales->setQuantityByWeek($quantity ?? 0, $productId, $week, $year);
+                }
             }
+            $statement->close();
         }
-        $statement->close();
 
         return $productSales;
     }
@@ -116,6 +126,9 @@ trait PurchaseItemsTableManager
      * Return an array with the first and last date of the given week in the optionally given year.
      * The current year will be used if the year is not given. The dates are represented as DateTime objects.
      * The first date has key 'start'. The last date has key 'end'.
+     * @param int $week
+     * @param int|null $year
+     * @return array<string, string>
      */
     private static function getWeekDates(int $week, int $year = null): array
     {

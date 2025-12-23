@@ -26,8 +26,10 @@ trait PurchasesTableManager
                 PRIMARY KEY (`purchase_id`)
             );"
         );
-        $statement->execute();
-        $statement->close();
+        if ($statement){
+            $statement->execute();
+            $statement->close();
+        }
     }
 
     /**
@@ -40,15 +42,17 @@ trait PurchasesTableManager
         $price = null;
 
         $statement = $this->getClient()->prepare("SELECT * FROM purchases WHERE purchase_id = ?");
-        $statement->bind_param("i", $purchaseId);
-        $statement->execute();
-        $statement->bind_result($purchaseId, $purchasedAt, $price);
+        if ($statement) {
+            $statement->bind_param("i", $purchaseId);
+            $statement->execute();
+            $statement->bind_result($purchaseId, $purchasedAt, $price);
 
-        if (!$statement->fetch()) {
+            if (!$statement->fetch()) {
+                $statement->close();
+                throw new Exception("Purchase $purchaseId not found.");
+            }
             $statement->close();
-            throw new Exception("Purchase $purchaseId not found.");
         }
-        $statement->close();
 
         return new Purchase($purchaseId,safeDateTime($purchasedAt),$price);
     }
@@ -61,12 +65,16 @@ trait PurchasesTableManager
         $purchaseId = 0;
 
         $statement = $this->getClient()->prepare("INSERT INTO `purchases` () VALUES ();");
-        $statement->execute();
-        $statement = $this->getClient()->prepare("SELECT LAST_INSERT_ID();");
-        $statement->bind_result($purchaseId);
-        $statement->execute();
-        $statement->fetch();
-        $statement->close();
+        if ($statement) {
+            $statement->execute();
+            $statement = $this->getClient()->prepare("SELECT LAST_INSERT_ID();");
+            if ($statement) {
+                $statement->bind_result($purchaseId);
+                $statement->execute();
+                $statement->fetch();
+                $statement->close();
+            }
+        }
 
         return $purchaseId;
     }
@@ -105,16 +113,18 @@ trait PurchasesTableManager
 
         $statement = $this->getClient()->prepare($sql);
 
-        if ($params !== []) {
-            $params[] = $purchaseId;
-            $types   .= 'i';
-            $statement->bind_param($types, ...$params);
-        } else {
-            $statement->bind_param('i', $purchaseId);
-        }
+        if ($statement) {
+            if ($params !== []) {
+                $params[] = $purchaseId;
+                $types   .= 'i';
+                $statement->bind_param($types, ...$params);
+            } else {
+                $statement->bind_param('i', $purchaseId);
+            }
 
-        $statement->execute();
-        $statement->close();
+            $statement->execute();
+            $statement->close();
+        }
 
         return $purchaseId;
     }

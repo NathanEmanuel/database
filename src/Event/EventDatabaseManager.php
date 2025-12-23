@@ -19,8 +19,10 @@ class EventDatabaseManager extends DatabaseManager
                 PRIMARY KEY (pin_id)
             );"
         );
-        $statement->execute();
-        $statement->close();
+        if ($statement) {
+            $statement->execute();
+            $statement->close();
+        }
     }
 
     /**
@@ -31,15 +33,18 @@ class EventDatabaseManager extends DatabaseManager
     public function getCurrentlyPinnedEventIds(): array
     {
         $eventId = 0;
+        $eventIds = array();
 
         $statement = $this->getClient()->prepare("SELECT `event_id` FROM `pins` WHERE (NOW() BETWEEN start_at AND end_at) OR (NOW() > start_at AND end_at IS NULL);");
-        $statement->bind_result($eventId);
-        $statement->execute();
-        $eventIds = array();
-        while ($statement->fetch()) {
-            $eventIds[] = $eventId;
+        if ($statement) {
+            $statement->bind_result($eventId);
+            $statement->execute();
+
+            while ($statement->fetch()) {
+                $eventIds[] = $eventId;
+            }
+            $statement->close();
         }
-        $statement->close();
 
         return $eventIds;
     }
@@ -56,14 +61,16 @@ class EventDatabaseManager extends DatabaseManager
         $endAt = is_null($endAt) ? null : $endAt->format(self::SQL_DATETIME_FORMAT);
 
         $statement = $this->getClient()->prepare("INSERT INTO `pins` (`event_id`, `start_at`, `end_at`) VALUES (?, ?, ?)");
-        $statement->bind_param(
-            "iss",
-            $eventId,
-            $startAt,
-            $endAt,
-        );
-        $statement->execute();
-        $statement->close();
+        if ($statement) {
+            $statement->bind_param(
+                "iss",
+                $eventId,
+                $startAt,
+                $endAt,
+            );
+            $statement->execute();
+            $statement->close();
+        }
     }
 
     /**
@@ -78,13 +85,15 @@ class EventDatabaseManager extends DatabaseManager
         $endAt = is_null($endAt) ? null : $endAt->format(self::SQL_DATETIME_FORMAT);
 
         $statement = $this->getClient()->prepare("UPDATE `pins` SET `start_at` = ?, `end_at` = ? WHERE `event_id` = ?;");
-        $statement->bind_param(
-            "ssi",
-            $startAt,
-            $endAt,
-            $eventId,
-        );
-        $statement->execute();
-        $statement->close();
+        if ($statement) {
+            $statement->bind_param(
+                "ssi",
+                $startAt,
+                $endAt,
+                $eventId,
+            );
+            $statement->execute();
+            $statement->close();
+        }
     }
 }

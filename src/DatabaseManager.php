@@ -11,6 +11,9 @@ abstract class DatabaseManager
 
     private mysqli $client;
 
+    /**
+     * @param array<string> $config
+     */
     public function __construct(array $config)
     {
         $this->client = new mysqli(...$config);
