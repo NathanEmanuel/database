@@ -22,5 +22,8 @@
     },
     "require": {
         "ext-mysqli": "*"
+    },
+    "scripts": {
+        "test": "vendor/bin/phpunit --fail-on-empty-test-suite --display-errors --display-notices --display-warnings --display-all-issues --teamcity"
     }
 }
