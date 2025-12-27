@@ -3,8 +3,10 @@
 namespace Compucie\Database\Poll;
 
 use Compucie\Database\DatabaseManager;
+use Compucie\Database\Poll\Model\Option;
 use Compucie\Database\Poll\Model\Options;
 use Compucie\Database\Poll\Model\Poll;
+use Compucie\Database\Poll\Model\Vote;
 use DateTime;
 use Exception;
 use mysqli_sql_exception;
@@ -38,7 +40,7 @@ class PollDatabaseManager extends DatabaseManager
                 `poll_id` INT NOT NULL,
                 `text` VARCHAR(4095) NOT NULL,
                 PRIMARY KEY (option_id),
-                FOREIGN KEY (poll_id) REFERENCES polls(poll_id)
+                FOREIGN KEY (poll_id) REFERENCES polls(poll_id) ON DELETE CASCADE
             );"
         );
         if ($statement){
@@ -54,14 +56,71 @@ class PollDatabaseManager extends DatabaseManager
                 `user_id` INT NOT NULL,
                 `published_at` DATETIME NOT NULL DEFAULT UTC_TIMESTAMP(),
                 PRIMARY KEY (vote_id),
-                FOREIGN KEY (poll_id) REFERENCES polls(poll_id),
-                FOREIGN KEY (option_id) REFERENCES options(option_id)
+                FOREIGN KEY (poll_id) REFERENCES polls(poll_id) ON DELETE CASCADE,
+                FOREIGN KEY (option_id) REFERENCES options(option_id) ON DELETE CASCADE
             );"
         );
         if ($statement){
             $statement->execute();
             $statement->close();
         }
+    }
+
+    /**
+     * Update a poll and possibly clear the expires at field.
+     * @param int $pollId
+     * @param string|null $question
+     * @param DateTime|null $expiresAt
+     * @param bool $clearExpiresAt
+     * @return int
+     * @throws mysqli_sql_exception
+     */
+    public function updatePoll(
+        int $pollId,
+        ?string $question = null,
+        ?DateTime $expiresAt = null,
+        bool $clearExpiresAt = false
+    ): int {
+        $fields = [];
+        $params = [];
+        $types  = '';
+
+        if ($clearExpiresAt) {
+            $fields[] = 'expires_at = NULL';
+        } elseif ($expiresAt !== null) {
+            $fields[] = 'expires_at = ?';
+            $params[] = $expiresAt->format(self::SQL_DATETIME_FORMAT);
+            $types   .= 's';
+        }
+
+        if ($question !== null) {
+            $fields[] = 'question = ?';
+            $params[] = $question;
+            $types   .= 's';
+        }
+
+        $this->executeUpdate('polls', 'poll_id', $pollId, $fields, $params, $types);
+        return $pollId;
+    }
+
+    /**
+     * Delete the poll
+     * @param int $pollId
+     * @return bool
+     */
+    public function deletePoll(int $pollId): bool
+    {
+        $deleted = 0;
+
+        $statement = $this->getClient()->prepare("DELETE FROM `polls` WHERE `poll_id` = ?");
+        if ($statement) {
+            $statement->bind_param("i", $pollId);
+            $statement->execute();
+            $deleted = $statement->affected_rows;
+            $statement->close();
+        }
+
+        return $deleted > 0;
     }
 
     /**
@@ -215,15 +274,19 @@ class PollDatabaseManager extends DatabaseManager
      * @param   DateTime    $expiresAt  The moment at which the poll expires.
      * @throws  mysqli_sql_exception
      */
-    public function addPoll(string $question, DateTime $expiresAt): void
+    public function addPoll(string $question, DateTime $expiresAt): int
     {
+        $pollId = 0;
+
         $statement = $this->getClient()->prepare("INSERT INTO `polls` (`question`, `expires_at`) VALUES (?, ?)");
         if ($statement) {
             $format = $expiresAt->format(self::SQL_DATETIME_FORMAT);
             $statement->bind_param("ss", $question, $format);
             $statement->execute();
+            $pollId = $statement->insert_id;
             $statement->close();
         }
+        return $pollId;
     }
 
     /**
@@ -247,14 +310,19 @@ class PollDatabaseManager extends DatabaseManager
      * @param   int     $optionId   The ID of the option.
      * @throws  mysqli_sql_exception
      */
-    public function deleteOption(int $optionId): void
+    public function deleteOption(int $optionId): bool
     {
+        $deleted = 0;
+
         $statement = $this->getClient()->prepare("DELETE FROM `options` WHERE `option_id` = ?");
         if ($statement) {
             $statement->bind_param("i", $optionId);
             $statement->execute();
+            $deleted = $statement->affected_rows;
             $statement->close();
         }
+
+        return $deleted > 0;
     }
 
     /**
@@ -314,6 +382,34 @@ class PollDatabaseManager extends DatabaseManager
             $optionsVoteCounted,
             $pollVoteCount
         );
+    }
+
+    public function getOption(int $optionId): Option
+    {
+        $id = 0;
+        $pollId = 0;
+        $text = "";
+
+        $statement = $this->getClient()->prepare("SELECT * FROM `options` WHERE `option_id` = ?");
+        if ($statement) {
+            $statement->bind_param("i", $optionId);
+            $statement->bind_result($id, $pollId, $text);
+            $statement->execute();
+            $statement->fetch();
+            $statement->close();
+        }
+
+        return new Option($id, $pollId, $text, $this->getVotes($id));
+    }
+
+    public function updateOption(int $optionId, string $optionText): void
+    {
+        $statement = $this->getClient()->prepare("UPDATE `options` SET `text` = ? WHERE `option_id` = ?");
+        if ($statement) {
+            $statement->bind_param("si", $optionText, $optionId);
+            $statement->execute();
+            $statement->close();
+        }
     }
 
     /**
@@ -407,5 +503,45 @@ class PollDatabaseManager extends DatabaseManager
             $statement->execute();
             $statement->close();
         }
+    }
+
+
+    public function deleteVote(int $voteId): bool
+    {
+        $deleted = 0;
+
+        $statement = $this->getClient()->prepare("DELETE FROM `votes` WHERE `vote_id` = ?");
+        if ($statement) {
+            $statement->bind_param("i", $voteId);
+            $statement->execute();
+            $deleted = $statement->affected_rows;
+            $statement->close();
+        }
+
+        return $deleted > 0;
+    }
+
+
+    /**
+     * @param int $optionId
+     * @return array<Vote>
+     */
+    public function getVotes(int $optionId): array
+    {
+        $votes = array();
+
+        $statement = $this->getClient()->prepare("SELECT * FROM `votes` WHERE `option_id` = ?");
+        if ($statement) {
+            $statement->bind_param("i", $optionId);
+            $statement->execute();
+            $statement->bind_result($id, $pollId, $optionId, $userId, $publishedAt);
+            while ($statement->fetch()) {
+                $vote = new Vote($id, $pollId, $optionId, $userId, safeDateTime($publishedAt));
+                $votes[] = $vote;
+            }
+            $statement->close();
+        }
+
+        return $votes;
     }
 }

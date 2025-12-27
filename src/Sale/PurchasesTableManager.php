@@ -79,12 +79,17 @@ trait PurchasesTableManager
         return $purchaseId;
     }
 
-    public function updatePurchase(int $purchaseId, ?DateTime $purchasedAt = null, ?float $price = null, bool $clearPurchaseAt = false, bool $clearPrice = false): int {
+    public function updatePurchase(
+        int $purchaseId,
+        ?DateTime $purchasedAt = null,
+        ?float $price = null,
+        bool $clearPurchaseAt = false,
+        bool $clearPrice = false
+    ): int {
         $fields = [];
         $params = [];
         $types  = '';
 
-        // purchased_at
         if ($clearPurchaseAt) {
             $fields[] = 'purchased_at = NULL';
         } elseif ($purchasedAt !== null) {
@@ -93,7 +98,6 @@ trait PurchasesTableManager
             $types   .= 's';
         }
 
-        // price
         if ($clearPrice) {
             $fields[] = 'price = NULL';
         } elseif ($price !== null) {
@@ -102,30 +106,7 @@ trait PurchasesTableManager
             $types   .= 'd';
         }
 
-        if ($fields === []) {
-            return $purchaseId;
-        }
-
-        $sql = sprintf(
-            'UPDATE purchases SET %s WHERE purchase_id = ?',
-            implode(', ', $fields)
-        );
-
-        $statement = $this->getClient()->prepare($sql);
-
-        if ($statement) {
-            if ($params !== []) {
-                $params[] = $purchaseId;
-                $types   .= 'i';
-                $statement->bind_param($types, ...$params);
-            } else {
-                $statement->bind_param('i', $purchaseId);
-            }
-
-            $statement->execute();
-            $statement->close();
-        }
-
+        $this->executeUpdate('purchases', 'purchase_id', $purchaseId, $fields, $params, $types);
         return $purchaseId;
     }
 }

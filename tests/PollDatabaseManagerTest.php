@@ -173,7 +173,7 @@ class PollDatabaseManagerTest extends TestCase
         //published_at has UTC timestamp
         $question1 = "Is this a poll?";
         $date1 = new DateTime();
-        $this->dbm->addPoll($question1, $date1);
+        $pollId = $this->dbm->addPoll($question1, $date1);
 
         assertSame(1, $this->dbh->rowCount('polls'));
         assertSame(0, $this->dbh->rowCount('options'));
@@ -181,6 +181,7 @@ class PollDatabaseManagerTest extends TestCase
         assertSame(1, $this->dbh->rowCount(
             'polls', 'poll_id = 1 AND question = ? AND published_at IS NOT NULL AND expires_at = ?',[$question1, $date1->format('Y-m-d H:i:s')])
         );
+        assertSame(1, $pollId);
     }
 
     function testAddOption(): void
@@ -222,7 +223,7 @@ class PollDatabaseManagerTest extends TestCase
             'options', 'option_id = 2 AND poll_id = 1 AND text = ?',[$option2])
         );
 
-        $this->dbm->deleteOption(1);
+        $deletedOption = $this->dbm->deleteOption(1);
 
         assertSame(1, $this->dbh->rowCount('polls'));
         assertSame(1, $this->dbh->rowCount('options'));
@@ -233,6 +234,7 @@ class PollDatabaseManagerTest extends TestCase
         assertSame(1, $this->dbh->rowCount(
             'options', 'option_id = 2 AND poll_id = 1 AND text = ?',[$option2])
         );
+        assertTrue($deletedOption);
     }
 
     function testAddVote(): void
@@ -312,6 +314,149 @@ class PollDatabaseManagerTest extends TestCase
         $this->dbm->expirePoll(1);
         assertSame(1, $this->dbh->rowCount(
             'polls', 'poll_id = 1 AND question = ? AND published_at IS NOT NULL AND expires_at > ?',[$question1, $date1->format('Y-m-d H:i:s')])
+        );
+    }
+
+    function testDeletePoll(): void
+    {
+        $question1 = "Is this a poll?";
+        $date1 = new DateTime();
+        $this->dbm->addPoll($question1, $date1);
+        $question2 = "Is this another poll?";
+        $date2 = new DateTime();
+        $this->dbm->addPoll($question2, $date2);
+        assertSame(2, $this->dbh->rowCount('polls'));
+        assertSame(1, $this->dbh->rowCount('polls', 'poll_id = 1'));
+        assertSame(1, $this->dbh->rowCount('polls', 'poll_id = 2'));
+        $amountDeleted = $this->dbm->deletePoll(1);
+        assertSame(1, $this->dbh->rowCount('polls'));
+
+        assertTrue($amountDeleted);
+    }
+
+    function testDeletePollAndOptions(): void
+    {
+        $this->dbm->addPoll("Is this a poll?", new DateTime());
+
+        $option1 = "Yes";
+        $option2 = "No";
+        $this->dbm->addOption(1, $option1);
+        $this->dbm->addOption(1, $option2);
+
+        assertSame(1, $this->dbh->rowCount('polls'));
+        assertSame(2, $this->dbh->rowCount('options'));
+        assertSame(0, $this->dbh->rowCount('votes'));
+
+        $deleted = $this->dbm->deletePoll(1);
+        assertTrue($deleted);
+
+        assertSame(0, $this->dbh->rowCount('polls'));
+        assertSame(0, $this->dbh->rowCount('options'));
+        assertSame(0, $this->dbh->rowCount('votes'));
+    }
+
+    function testDeletePollAndOptionsAndVotes(): void
+    {
+        $this->dbm->addPoll("Is this a poll?", new DateTime());
+
+        $option1 = "Yes";
+        $option2 = "No";
+        $this->dbm->addOption(1, $option1);
+        $this->dbm->addOption(1, $option2);
+
+        $this->dbm->addVote(1, 1,1);
+        $this->dbm->addVote(1, 2,2);
+        $this->dbm->addVote(1, 3,1);
+
+        assertSame(1, $this->dbh->rowCount('polls'));
+        assertSame(2, $this->dbh->rowCount('options'));
+        assertSame(3, $this->dbh->rowCount('votes'));
+
+        $deleted = $this->dbm->deletePoll(1);
+        assertTrue($deleted);
+
+        assertSame(0, $this->dbh->rowCount('polls'));
+        assertSame(0, $this->dbh->rowCount('options'));
+        assertSame(0, $this->dbh->rowCount('votes'));
+    }
+
+    function testDeletePollNotFound(): void
+    {
+        $amountDeleted = $this->dbm->deletePoll(1);
+        assertFalse($amountDeleted);
+    }
+
+    function testDeleteVote(): void
+    {
+        $this->dbm->addPoll("Is this a poll?", new DateTime());
+
+        $option1 = "Yes";
+        $option2 = "No";
+        $this->dbm->addOption(1, $option1);
+        $this->dbm->addOption(1, $option2);
+
+        $this->dbm->addVote(1, 1,1);
+        $this->dbm->addVote(1, 2,2);
+        $this->dbm->addVote(1, 3,1);
+
+        assertSame(1, $this->dbh->rowCount('polls'));
+        assertSame(2, $this->dbh->rowCount('options'));
+        assertSame(3, $this->dbh->rowCount('votes'));
+
+        $deleted = $this->dbm->deleteVote(1);
+        assertTrue($deleted);
+
+        assertSame(1, $this->dbh->rowCount('polls'));
+        assertSame(2, $this->dbh->rowCount('options'));
+        assertSame(2, $this->dbh->rowCount('votes'));
+    }
+
+    function testUpdatePoll(): void
+    {
+        $question1 = "Is this a poll?";
+        $date1 = new DateTime();
+        $this->dbm->addPoll($question1, $date1);
+
+        assertSame(1, $this->dbh->rowCount('polls'));
+        assertSame(0, $this->dbh->rowCount('options'));
+        assertSame(0, $this->dbh->rowCount('votes'));
+        assertSame(1, $this->dbh->rowCount(
+            'polls', 'poll_id = 1 AND question = ? AND published_at IS NOT NULL AND expires_at = ?',[$question1, $date1->format('Y-m-d H:i:s')])
+        );
+
+        $this->dbm->updatePoll(1);
+        assertSame(1, $this->dbh->rowCount('polls'));
+        assertSame(0, $this->dbh->rowCount('options'));
+        assertSame(0, $this->dbh->rowCount('votes'));
+        assertSame(1, $this->dbh->rowCount(
+            'polls', 'poll_id = 1 AND question = ? AND published_at IS NOT NULL AND expires_at = ?', [$question1, $date1->format('Y-m-d H:i:s')])
+        );
+
+        $question1Updated = "Is this a poll maybe?";
+        $this->dbm->updatePoll(1, $question1Updated);
+        assertSame(1, $this->dbh->rowCount('polls'));
+        assertSame(0, $this->dbh->rowCount('options'));
+        assertSame(0, $this->dbh->rowCount('votes'));
+        assertSame(1, $this->dbh->rowCount(
+            'polls', 'poll_id = 1 AND question = ? AND published_at IS NOT NULL AND expires_at = ?', [$question1Updated, $date1->format('Y-m-d H:i:s')])
+        );
+    }
+
+    function testUpdateOptionText(): void
+    {
+        $this->dbm->addPoll("Is this a poll?", new DateTime());
+
+        $option1 = "Yes";
+        $option2 = "No";
+        $this->dbm->addOption(1, $option1);
+        $this->dbm->addOption(1, $option2);
+
+        $this->dbm->updateOption(1,"");
+        assertSame(1, $this->dbh->rowCount('polls'));
+        assertSame(2, $this->dbh->rowCount('options'));
+        assertSame(0, $this->dbh->rowCount('votes'));
+        assertSame(1, $this->dbh->rowCount(
+            'options', 'option_id = 1 AND poll_id = 1 AND text = ?',[""])
         );
     }
 }
