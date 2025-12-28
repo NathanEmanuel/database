@@ -40,7 +40,8 @@ class PollDatabaseManager extends DatabaseManager
                 `poll_id` INT NOT NULL,
                 `text` VARCHAR(4095) NOT NULL,
                 PRIMARY KEY (option_id),
-                FOREIGN KEY (poll_id) REFERENCES polls(poll_id) ON DELETE CASCADE
+                KEY `idx_options_poll` (`poll_id`),
+                CONSTRAINT `fk_options_poll` FOREIGN KEY (poll_id) REFERENCES polls(poll_id) ON DELETE CASCADE
             );"
         );
         if ($statement){
@@ -56,8 +57,11 @@ class PollDatabaseManager extends DatabaseManager
                 `user_id` INT NOT NULL,
                 `published_at` DATETIME NOT NULL DEFAULT UTC_TIMESTAMP(),
                 PRIMARY KEY (vote_id),
-                FOREIGN KEY (poll_id) REFERENCES polls(poll_id) ON DELETE CASCADE,
-                FOREIGN KEY (option_id) REFERENCES options(option_id) ON DELETE CASCADE
+                UNIQUE KEY `uniq_vote` (`poll_id`, `user_id`),
+                KEY `idx_votes_poll` (`poll_id`),
+                KEY `idx_votes_option` (`option_id`),
+                CONSTRAINT `fk_votes_poll` FOREIGN KEY (poll_id) REFERENCES polls(poll_id) ON DELETE CASCADE,
+                CONSTRAINT `fk_votes_option` FOREIGN KEY (option_id) REFERENCES options(option_id) ON DELETE CASCADE
             );"
         );
         if ($statement){

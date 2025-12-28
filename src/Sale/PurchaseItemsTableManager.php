@@ -26,7 +26,8 @@ trait PurchaseItemsTableManager
                 `name` VARCHAR(255) DEFAULT NULL,
                 `unit_price` DECIMAL(10,2) DEFAULT NULL,
                 PRIMARY KEY (`purchase_item_id`),
-                FOREIGN KEY (`purchase_id`) REFERENCES purchases(`purchase_id`)
+                KEY `idx_purchase_items_purchases` (`purchase_id`),
+                CONSTRAINT `fk_purchase_items_purchases` FOREIGN KEY (`purchase_id`) REFERENCES purchases(`purchase_id`)
             );"
         );
         if ($statement) {
