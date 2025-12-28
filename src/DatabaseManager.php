@@ -47,14 +47,16 @@ abstract class DatabaseManager
         $createdId = -1;
 
         if ($fields === []) {
-            return $createdId;
+            $valuesString = "";
+        } else {
+            $valuesString = str_repeat('?, ',count($fields)-1) . ' ?';
         }
 
         $sql = sprintf(
             'INSERT INTO `%s` (%s) VALUES (%s)',
             str_replace('`', '``', $table),
             implode(', ', $fields),
-            str_repeat('?, ', count($fields)-1) . ' ?'
+            $valuesString
         );
 
         $statement = $this->getClient()->prepare($sql);
@@ -62,7 +64,12 @@ abstract class DatabaseManager
             throw new mysqli_sql_exception($this->getClient()->error);
         }
 
-        $statement->bind_param($types, ...$this->refValues($params));
+        if ($params !== []) {
+            if ($types === '') {
+                throw new mysqli_sql_exception('executeCreate: types are required when parameters are given.');
+            }
+            $statement->bind_param($types, ...$this->refValues($params));
+        }
 
         $statement->execute();
         $checkCreated = $statement->insert_id;

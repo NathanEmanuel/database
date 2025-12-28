@@ -39,14 +39,19 @@ trait PurchaseItemsTableManager
     /**
      * @throws  mysqli_sql_exception
      */
-    public function insertPurchaseItem(int $purchaseId, int $productId, int $quantity = 1, ?string $name = null, ?float $unitPrice = null): void
-    {
-        $statement = $this->getClient()->prepare("INSERT INTO `purchase_items` (`purchase_id`, `product_id`, `quantity`, `name`, `unit_price`) VALUES (?, ?, ?, ?, ?);");
-        if ($statement) {
-            $statement->bind_param("iiisd", $purchaseId, $productId, $quantity, $name, $unitPrice);
-            $statement->execute();
-            $statement->close();
-        }
+    public function insertPurchaseItem(
+        int $purchaseId,
+        int $productId,
+        int $quantity = 1,
+        ?string $name = null,
+        ?float $unitPrice = null
+    ): bool {
+        return $this->executeCreate(
+                'purchase_items',
+                ['`purchase_id`', '`product_id`', '`quantity`', '`name`', '`unit_price`'],
+                [$purchaseId, $productId, $quantity, $name, $unitPrice],
+                'iiisd'
+            ) !== -1;
     }
 
     /**
@@ -96,28 +101,30 @@ trait PurchaseItemsTableManager
      * @return  ProductSales
      * @throws  mysqli_sql_exception
      */
-    public function selectProductSalesByWeeks(array $productIds, array $weeks, int $year = null): ProductSales
+    public function selectProductSalesByWeeks(array $productIds, array $weeks, ?int $year = null): ProductSales
     {
         $productSales = new ProductSales();
-        $statement = $this->getClient()->prepare(
-            "SELECT SUM(`quantity`) FROM `purchase_items`
-            WHERE `product_id` = ?
-            AND `purchase_id` IN (SELECT `purchase_id` FROM `purchases` WHERE `purchased_at` BETWEEN ? AND ?);"
-        );
-        if ($statement) {
-            foreach ($productIds as $productId) {
-                foreach ($weeks as $week) {
-                    $quantity = 0;
 
-                    $weekDates = self::getWeekDates($week, $year);
-                    $statement->bind_param("iss", $productId, $weekDates['start'], $weekDates['end']);
-                    $statement->bind_result($quantity);
-                    $statement->execute();
-                    $statement->fetch();
-                    $productSales->setQuantityByWeek($quantity ?? 0, $productId, $week, $year);
-                }
+        foreach ($productIds as $productId) {
+            foreach ($weeks as $week) {
+                $weekDates = self::getWeekDates((int)$week, $year);
+
+                $row = $this->executeReadOne(
+                    "SELECT SUM(`quantity`) AS qty
+                    FROM `purchase_items`
+                    WHERE `product_id` = ?
+                        AND `purchase_id` IN (
+                            SELECT `purchase_id`
+                            FROM `purchases`
+                            WHERE `purchased_at` BETWEEN ? AND ?
+                    )",
+                    [(int)$productId, $weekDates['start'], $weekDates['end']],
+                    "iss"
+                );
+
+                $qty = ($row === null || $row['qty'] === null) ? 0 : (int)$row['qty'];
+                $productSales->setQuantityByWeek($qty, (int)$productId, (int)$week, $year);
             }
-            $statement->close();
         }
 
         return $productSales;

@@ -47,7 +47,7 @@ class SaleDatabaseManagerTest extends TestCase
         $purchasedAt = $purchase->getPurchasedAt();
         assertNotNull($purchasedAt);
         assertSame((new DateTime())->format("Y-m-d"), $purchasedAt->format('Y-m-d'));
-        assertSame(null, $purchase->getPrice());
+        assertSame(0.0, $purchase->getPrice());
     }
 
 
@@ -58,6 +58,9 @@ class SaleDatabaseManagerTest extends TestCase
         $this->dbm->getPurchase(1);
     }
 
+    /**
+     * @throws Exception
+     */
     public function testInsertPurchase(): void
     {
         $purchaseId = $this->dbm->insertPurchase();
@@ -95,6 +98,9 @@ class SaleDatabaseManagerTest extends TestCase
         assertSame(5.57, $purchase->getPrice());
     }
 
+    /**
+     * @throws Exception
+     */
     public function testInsertPurchaseItem(): void
     {
         $purchaseId = $this->dbm->insertPurchase();
@@ -158,6 +164,7 @@ class SaleDatabaseManagerTest extends TestCase
 
     /**
      * @throws WeekDoesNotExistException
+     * @throws Exception
      */
     public function testSelectProductSalesOfLastWeeksSameYear(): void
     {
@@ -172,7 +179,7 @@ class SaleDatabaseManagerTest extends TestCase
         $weekCount = 8;
 
         $productSales = $this->dbm->selectProductSalesOfLastWeeks([1, 2], $weekCount, $currentWeek);
-        echo $productSales->asJson();
+
         assertSame(15, $productSales->getQuantityByWeek(1, 33));
         assertSame("3 Cookies", $productSales->getNameByWeek(1, 33));
         assertSame(0.69, $productSales->getUnitPriceByWeek(1, 33));
@@ -189,6 +196,7 @@ class SaleDatabaseManagerTest extends TestCase
 
     /**
      * @throws WeekDoesNotExistException
+     * @throws Exception
      * Available from php8.3 throws DateInvalidOperationException
      */
     public function testSelectProductSalesOfLastWeeksNotSameYear(): void
@@ -213,12 +221,15 @@ class SaleDatabaseManagerTest extends TestCase
 
     private function getIsoDatetime(int $isoYear, int $isoWeek): DateTime
     {
-        $dt = (new DateTime())->setISODate($isoYear, $isoWeek, 1);
+        $dt = (new DateTime())->setISODate($isoYear, $isoWeek);
         $dt->setTime((int)substr('12:00:00', 0, 2), (int)substr('12:00:00', 3, 2), (int)substr('12:00:00', 6, 2));
 
         return $dt;
     }
 
+    /**
+     * @throws Exception
+     */
     public function testSelectProductSalesByWeek(): void
     {
         $purchaseId1 = $this->dbm->insertPurchase();

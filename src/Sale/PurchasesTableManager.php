@@ -38,45 +38,38 @@ trait PurchasesTableManager
      */
     public function getPurchase(int $purchaseId): Purchase
     {
-        $purchasedAt = null;
-        $price = null;
+        $row = $this->executeReadOne(
+            "SELECT *
+            FROM `purchases`
+            WHERE `purchase_id` = ?",
+            [$purchaseId],
+            "i"
+        );
 
-        $statement = $this->getClient()->prepare("SELECT * FROM purchases WHERE purchase_id = ?");
-        if ($statement) {
-            $statement->bind_param("i", $purchaseId);
-            $statement->execute();
-            $statement->bind_result($purchaseId, $purchasedAt, $price);
-
-            if (!$statement->fetch()) {
-                $statement->close();
-                throw new Exception("Purchase $purchaseId not found.");
-            }
-            $statement->close();
+        if ($row === null) {
+            throw new Exception("Purchase $purchaseId not found.");
         }
 
-        return new Purchase($purchaseId,safeDateTime($purchasedAt),$price);
+        return new Purchase(
+            (int)$row['purchase_id'],
+            safeDateTime((string)$row['purchased_at']),
+            (float)$row['price']
+        );
     }
 
     /**
      * @throws  mysqli_sql_exception
+     * @throws Exception
      */
     public function insertPurchase(): int
     {
-        $purchaseId = 0;
+        $id = $this->executeCreate('purchases', [], [], '');
 
-        $statement = $this->getClient()->prepare("INSERT INTO `purchases` () VALUES ();");
-        if ($statement) {
-            $statement->execute();
-            $statement = $this->getClient()->prepare("SELECT LAST_INSERT_ID();");
-            if ($statement) {
-                $statement->bind_result($purchaseId);
-                $statement->execute();
-                $statement->fetch();
-                $statement->close();
-            }
+        if ($id === -1) {
+            throw new Exception('Failed to create purchase');
         }
 
-        return $purchaseId;
+        return $id;
     }
 
     public function updatePurchase(
@@ -85,7 +78,7 @@ trait PurchasesTableManager
         ?float $price = null,
         bool $clearPurchaseAt = false,
         bool $clearPrice = false
-    ): int {
+    ): bool {
         $fields = [];
         $params = [];
         $types  = '';
@@ -106,7 +99,6 @@ trait PurchasesTableManager
             $types   .= 'd';
         }
 
-        $this->executeUpdate('purchases', 'purchase_id', $purchaseId, $fields, $params, $types);
-        return $purchaseId;
+        return $this->executeUpdate('purchases', 'purchase_id', $purchaseId, $fields, $params, $types);
     }
 }
