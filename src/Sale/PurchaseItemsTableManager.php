@@ -35,7 +35,7 @@ trait PurchaseItemsTableManager
         $statement->close();
     }
 
-    public function selectProductSalesOfLastWeeks(array $productIds, int $weekCount, int $currentWeek = null): ProductSales
+    public function selectProductSalesOfLastWeeks(array $productIds, int $weekCount, ?int $currentWeek = null): ProductSales
     {
         $currentWeek = $currentWeek ?? intval((new \DateTime())->format('W'));
 
@@ -74,7 +74,7 @@ trait PurchaseItemsTableManager
      * @param   int     $year           [Optional] The year in which the week number applies.
      * @return  ProductSales
      */
-    public function selectProductSalesByWeeks(array $productIds, array $weeks, int $year = null): ProductSales
+    public function selectProductSalesByWeeks(array $productIds, array $weeks, ?int $year = null): ProductSales
     {
         $productSales = new ProductSales();
         $statement = $this->getClient()->prepare(
@@ -101,7 +101,7 @@ trait PurchaseItemsTableManager
      * The current year will be used if the year is not given. The dates are represented as DateTime objects.
      * The first date has key 'start'. The last date has key 'end'.
      */
-    private static function getWeekDates(int $week, int $year = null): array
+    private static function getWeekDates(int $week, ?int $year = null): array
     {
         $year = $year ?? intval(date("Y"));
         $dto = new \DateTime();
