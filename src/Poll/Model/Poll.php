@@ -7,15 +7,15 @@ use DateTime;
 /**
  * Dataclass
  */
-class Poll
+readonly class Poll
 {
     public function __construct(
-        private int $id,
-        private string $question,
+        private int      $id,
+        private string   $question,
         private DateTime $publishedAt,
         private DateTime $expiresAt,
-        private Options $options,
-        private int $voteCount,
+        private Options  $options,
+        private int      $voteCount,
     ) {
     }
 

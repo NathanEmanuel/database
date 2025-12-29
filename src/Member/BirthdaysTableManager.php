@@ -3,6 +3,7 @@
 namespace Compucie\Database\Member;
 
 use mysqli;
+use mysqli_sql_exception;
 
 trait BirthdaysTableManager
 {
@@ -11,15 +12,17 @@ trait BirthdaysTableManager
     protected function createBirthdaysTable(): void
     {
         $statement = $this->getClient()->prepare(
-            "CREATE TABLE `screen_birthdays` (
+            "CREATE TABLE IF NOT EXISTS `screen_birthdays` (
                 `id` INT NOT NULL AUTO_INCREMENT,
                 `member_id` INT NOT NULL,
                 `date_of_birth` DATE NOT NULL,
                 PRIMARY KEY (`id`)
             );"
         );
-        $statement->execute();
-        $statement->close();
+        if ($statement){
+            $statement->execute();
+            $statement->close();
+        }
     }
 
     /**
@@ -29,20 +32,15 @@ trait BirthdaysTableManager
      */
     public function getMemberIdsWithBirthdayToday(): array
     {
-        $statement = $this->getClient()->prepare(
-            "SELECT `member_id` FROM `screen_birthdays`
-            WHERE DAY(date_of_birth) = DAY(CURRENT_DATE())
-		    AND MONTH(date_of_birth) = MONTH(CURRENT_DATE());"
+        $rows = $this->executeReadAll(
+            "SELECT `member_id`
+            FROM `screen_birthdays`
+            WHERE DATE_FORMAT(`date_of_birth`, '%m-%d') = DATE_FORMAT(CURRENT_DATE(), '%m-%d')"
         );
-        $statement->bind_result($memberId);
-        $statement->execute();
 
-        $memberIds = array();
-        while ($statement->fetch()) {
-            $memberIds[] = $memberId;
-        }
-
-        $statement->close();
-        return $memberIds;
+        return array_map(
+            static fn(array $row): int => (int)$row['member_id'],
+            $rows
+        );
     }
 }

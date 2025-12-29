@@ -4,13 +4,15 @@ namespace Compucie\Database\Event;
 
 use Compucie\Database\DatabaseManager;
 use DateTime;
+use InvalidArgumentException;
+use mysqli_sql_exception;
 
 class EventDatabaseManager extends DatabaseManager
 {
     public function createTables(): void
     {
         $statement = $this->getClient()->prepare(
-            "CREATE TABLE `pins` (
+            "CREATE TABLE IF NOT EXISTS `pins` (
                 `pin_id` INT NOT NULL AUTO_INCREMENT UNIQUE,
                 `event_id` INT NOT NULL,
                 `start_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -18,8 +20,10 @@ class EventDatabaseManager extends DatabaseManager
                 PRIMARY KEY (pin_id)
             );"
         );
-        $statement->execute();
-        $statement->close();
+        if ($statement) {
+            $statement->execute();
+            $statement->close();
+        }
     }
 
     /**
@@ -29,59 +33,68 @@ class EventDatabaseManager extends DatabaseManager
      */
     public function getCurrentlyPinnedEventIds(): array
     {
-        $statement = $this->getClient()->prepare("SELECT `event_id` FROM `pins` WHERE (NOW() BETWEEN start_at AND end_at) OR (NOW() > start_at AND end_at IS NULL);");
-        $statement->bind_result($eventId);
-        $statement->execute();
-        $eventIds = array();
-        while ($statement->fetch()) {
-            $eventIds[] = $eventId;
-        }
-        $statement->close();
+        $rows = $this->executeReadAll(
+            "SELECT `event_id`
+         FROM `pins`
+         WHERE (NOW() BETWEEN `start_at` AND `end_at`)
+            OR (`start_at` <= NOW() AND `end_at` IS NULL)"
+        );
 
-        return $eventIds;
+        return array_map(
+            static fn(array $row): int => (int)$row['event_id'],
+            $rows
+        );
     }
 
     /**
      * Insert an event pin.
      * @throws  mysqli_sql_exception
+     * @throws InvalidArgumentException
      */
-    public function insertPin(int $eventId, DateTime $startAt = null, DateTime $endAt = null): void
+    public function insertPin(int $eventId, DateTime $startAt = null, DateTime $endAt = null): int
     {
-        $startAt = is_null($startAt)
-            ? (new DateTime())->format(self::SQL_DATETIME_FORMAT)
-            : $startAt->format(self::SQL_DATETIME_FORMAT);
-        $endAt = is_null($endAt) ? null : $endAt->format(self::SQL_DATETIME_FORMAT);
+        if ($endAt !== null && $endAt < ($startAt ?? new DateTime())) {
+            throw new InvalidArgumentException('endAt must be after startAt');
+        }
 
-        $statement = $this->getClient()->prepare("INSERT INTO `pins` (`event_id`, `start_at`, `end_at`) VALUES (?, ?, ?)");
-        $statement->bind_param(
-            "iss",
-            $eventId,
-            $startAt,
-            $endAt,
+        $start = ($startAt ?? new DateTime())
+            ->format(self::SQL_DATETIME_FORMAT);
+
+        $end = $endAt?->format(self::SQL_DATETIME_FORMAT);
+
+        return $this->executeCreate(
+            'pins',
+            ['`event_id`', '`start_at`', '`end_at`'],
+            [$eventId, $start, $end],
+            'iss'
         );
-        $statement->execute();
-        $statement->close();
     }
 
     /**
      * Update an event pin.
      * @throws  mysqli_sql_exception
      */
-    public function updatePin(int $eventId, DateTime $startAt = null, DateTime $endAt = null): void
+    public function updatePin(int $eventId, ?DateTime $startAt = null, ?DateTime $endAt = null): bool
     {
-        $startAt = is_null($startAt)
-            ? (new DateTime())->format(self::SQL_DATETIME_FORMAT)
-            : $startAt->format(self::SQL_DATETIME_FORMAT);
-        $endAt = is_null($endAt) ? null : $endAt->format(self::SQL_DATETIME_FORMAT);
+        if ($endAt !== null && $endAt < ($startAt ?? new DateTime())) {
+            throw new InvalidArgumentException('endAt must be after startAt');
+        }
 
-        $statement = $this->getClient()->prepare("UPDATE `pins` SET `start_at` = ?, `end_at` = ? WHERE `event_id` = ?;");
-        $statement->bind_param(
-            "ssi",
-            $startAt,
-            $endAt,
+        $start = ($startAt ?? new DateTime())
+            ->format(self::SQL_DATETIME_FORMAT);
+
+        $end = $endAt?->format(self::SQL_DATETIME_FORMAT);
+
+        return $this->executeUpdate(
+            'pins',
+            'event_id',
             $eventId,
+            [
+                '`start_at` = ?',
+                '`end_at` = ?',
+            ],
+            [$start, $end],
+            'ss'
         );
-        $statement->execute();
-        $statement->close();
     }
 }

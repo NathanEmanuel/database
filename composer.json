@@ -1,13 +1,16 @@
 {
     "name": "compucie/database",
     "description": "Library of database managers used by Newton's systems.",
-    "version": "5.0.3",
+    "version": "6.0.0",
     "type": "library",
     "license": "MIT",
     "autoload": {
         "psr-4": {
             "Compucie\\Database\\": "src/"
-        }
+        },
+        "files": [
+            "src/utils.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {
@@ -15,6 +18,19 @@
         }
     },
     "require-dev": {
+        "phpstan/phpstan": "2.1.33",
         "phpunit/phpunit": "^11.2"
+    },
+    "require": {
+        "ext-mysqli": "*"
+    },
+    "scripts": {
+        "phpstan-base" : "vendor/bin/phpstan analyse src tests -b -l 8",
+        "phpstan-check" : "vendor/bin/phpstan analyse -c phpstan.neon",
+        "test": [
+            "Composer\\Config::disableProcessTimeout",
+            "vendor/bin/phpunit --teamcity"
+        ]
     }
 }
+

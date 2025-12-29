@@ -2,11 +2,12 @@
 
 namespace Compucie\Database\Sale\Model;
 
+use DateTime;
 use JsonSerializable;
 
 /**
  * Data structure:
- * 
+ *
  * productId
  *     year
  *         week
@@ -14,12 +15,15 @@ use JsonSerializable;
  */
 class ProductSales implements JsonSerializable
 {
+    /**
+     * @var array<mixed>
+     */
     private array $data = array();
     private int $presentYear;
 
     public function __construct()
     {
-        $this->presentYear = intval((new \DateTime)->format('Y'));
+        $this->presentYear = intval((new DateTime)->format('Y'));
     }
 
 
@@ -33,12 +37,19 @@ class ProductSales implements JsonSerializable
 
     // Main getters
 
+    /**
+     * @return array<mixed>
+     */
     private function &getData(): array
     {
         return $this->data;
     }
 
-    private function &getByProductId(int $productId)
+    /**
+     * @param int $productId
+     * @return array<mixed>
+     */
+    private function &getByProductId(int $productId): array
     {
         $data = &$this->getData();
         if (!key_exists($productId, $data)) {
@@ -47,6 +58,11 @@ class ProductSales implements JsonSerializable
         return $this->data[$productId];
     }
 
+    /**
+     * @param int $productId
+     * @param int|null $year
+     * @return array<mixed>
+     */
     public function &getDataByYear(int $productId, ?int $year = null): array
     {
         $year = $year ?? $this->presentYear;
@@ -76,6 +92,12 @@ class ProductSales implements JsonSerializable
 
     // Main setters
 
+    /**
+     * @param array<mixed> $data
+     * @param int $productId
+     * @param int $year
+     * @return void
+     */
     public function setDataByYear(array $data, int $productId, int $year): void
     {
         $this->data[$productId][$year] = $data;
@@ -94,7 +116,7 @@ class ProductSales implements JsonSerializable
 
     public function getQuantityByWeek(int $productId, int $week, ?int $year = null): int
     {
-        return $this->getDataByWeek("quantity", $productId, $week, $year);
+        return (int) $this->getDataByWeek("quantity", $productId, $week, $year);
     }
 
     public function setQuantityByWeek(int $quantity, int $productId, int $week, ?int $year = null): void

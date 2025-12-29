@@ -2,44 +2,121 @@
 
 namespace Compucie\DatabaseTest;
 
-use Compucie\Database\Event\EventDatabaseManager;
+use InvalidArgumentException;
+use DateInterval;
 use DateTime;
 use PHPUnit\Framework\TestCase;
+use function PHPUnit\Framework\assertSame;
 
 class EventDatabaseManagerTest extends TestCase
 {
-    private EventDatabaseManager $dbm;
+    private TestableEventDatabaseManager $dbm;
+    protected DbTestHelper $dbh;
 
     protected function setUp(): void
     {
-        $env = parse_ini_file(".env", true);
-        $this->dbm = new EventDatabaseManager($env['event']);
+        $env = parse_ini_file('.env', true);
+        if ($env) {
+            $this->dbm = new TestableEventDatabaseManager($env['event']);
+            $this->dbm->createTables();
+            $this->dbh = new DbTestHelper($this->dbm->client());
+
+            $this->dbh->truncateTables(['pins']);
+        }
     }
 
-    private function getDatabaseManager(): EventDatabaseManager
+    protected function tearDown(): void
     {
-        return $this->dbm;
+        $this->dbh->truncateTables(['pins']);
     }
 
     public function testInsertPin(): void
     {
-        $this->getDatabaseManager()->insertPin(0);
-        $this->getDatabaseManager()->insertPin(1, new DateTime);
-        $this->getDatabaseManager()->insertPin(2, endAt: new DateTime);
-        $this->getDatabaseManager()->insertPin(3, new DateTime, new DateTime);
+        $date1 = (new DateTime())->add(new DateInterval('PT1H'));
+        $date2 = (new DateTime())->add(new DateInterval('PT1H'));
+        $date3 = (new DateTime())->add(new DateInterval('PT1H'));
+        $date4 = (new DateTime())->add(new DateInterval('PT1H'));
+
+        $this->dbm->insertPin(1);
+        $this->dbm->insertPin(2, $date1);
+        $this->dbm->insertPin(3, endAt: $date2);
+        $this->dbm->insertPin(4, $date3, $date4);
+
+        assertSame(4, $this->dbh->rowCount('pins'));
+        assertSame(1, $this->dbh->rowCount(
+            'pins', 'event_id = 1 AND pin_id = 1 AND start_at IS NOT NULL AND end_at IS NULL')
+        );
+        assertSame(1, $this->dbh->rowCount(
+            'pins', 'event_id = 2 AND pin_id = 2 AND start_at = ? AND end_at IS NULL',[$date1->format('Y-m-d H:i:s')])
+        );
+        assertSame(1, $this->dbh->rowCount(
+            'pins', 'event_id = 3 AND pin_id = 3 AND start_at IS NOT NULL AND end_at = ?',[$date2->format('Y-m-d H:i:s')])
+        );
+        assertSame(1, $this->dbh->rowCount(
+            'pins', 'event_id = 4 AND pin_id = 4 AND start_at = ? AND end_at = ?',[$date3->format('Y-m-d H:i:s'), $date4->format('Y-m-d H:i:s')])
+        );
     }
+
+    public function testInsertPinException(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("endAt must be after startAt");
+        $date1 = new DateTime();
+
+        $this->dbm->insertPin(2, endAt: $date1);
+    }
+
 
     public function testUpdatePin(): void
     {
-        $this->getDatabaseManager()->updatePin(0);
-        $this->getDatabaseManager()->updatePin(1, new DateTime);
-        $this->getDatabaseManager()->updatePin(2, endAt: new DateTime);
-        $this->getDatabaseManager()->updatePin(3, new DateTime, new DateTime);
+        $date1 = (new DateTime())->add(new DateInterval('PT1H'));
+        $date2 = (new DateTime())->add(new DateInterval('PT1H'));
+        $date3 = (new DateTime())->add(new DateInterval('PT1H'));
+        $date4 = (new DateTime())->add(new DateInterval('PT1H'));
+
+        $this->dbm->insertPin(1);
+        $this->dbm->insertPin(2, $date1);
+        $this->dbm->insertPin(3, endAt: $date2);
+        $this->dbm->insertPin(4, $date3, $date4);
+
+        $date5 = (new DateTime())->add(new DateInterval('PT1H'));
+        $date6 = (new DateTime())->add(new DateInterval('PT1H'));
+        $date7 = (new DateTime())->add(new DateInterval('PT1H'));
+        $date8 = (new DateTime())->add(new DateInterval('PT1H'));
+
+        $this->dbm->updatePin(1);
+        $this->dbm->updatePin(2, $date5);
+        $this->dbm->updatePin(3, endAt: $date6);
+        $this->dbm->updatePin(4, $date7, $date8);
+
+        assertSame(4, $this->dbh->rowCount('pins'));
+        assertSame(1, $this->dbh->rowCount(
+            'pins', 'event_id = 1 AND pin_id = 1 AND start_at IS NOT NULL AND end_at IS NULL')
+        );
+        assertSame(1, $this->dbh->rowCount(
+            'pins', 'event_id = 2 AND pin_id = 2 AND start_at = ? AND end_at IS NULL',[$date5->format('Y-m-d H:i:s')])
+        );
+        assertSame(1, $this->dbh->rowCount(
+            'pins', 'event_id = 3 AND pin_id = 3 AND start_at IS NOT NULL AND end_at = ?',[$date6->format('Y-m-d H:i:s')])
+        );
+        assertSame(1, $this->dbh->rowCount(
+            'pins', 'event_id = 4 AND pin_id = 4 AND start_at = ? AND end_at = ?',[$date7->format('Y-m-d H:i:s'), $date8->format('Y-m-d H:i:s')])
+        );
     }
 
     public function testGetCurrentlyPinnedEventIds(): void
     {
-        $eventIds = $this->getDatabaseManager()->getCurrentlyPinnedEventIds();
-        $this->assertSame(2, count($eventIds));
+        $date1 = (new DateTime())->add(new DateInterval('PT1H'));
+        $date2 = (new DateTime())->add(new DateInterval('PT1H'));
+        $date3 = (new DateTime())->add(new DateInterval('PT1H'));
+        $date4 = (new DateTime())->add(new DateInterval('PT1H'));
+
+        $this->dbm->insertPin(1);
+        $this->dbm->insertPin(2, $date1);
+        $this->dbm->insertPin(3, endAt: $date2);
+        $this->dbm->insertPin(4, $date3, $date4);
+
+        $eventIds = $this->dbm->getCurrentlyPinnedEventIds();
+        assertSame(2, count($eventIds));
     }
 }
