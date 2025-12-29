@@ -33,8 +33,8 @@ abstract class DatabaseManager
 
     /**
      * @param string $table
-     * @param array $fields
-     * @param array $params
+     * @param array<string> $fields
+     * @param array<mixed> $params
      * @param string $types
      * @return int indication if the update has succeeded any number or -1 for failed
      */
@@ -163,7 +163,7 @@ abstract class DatabaseManager
      * Execute update for given data.
      * @param string       $table       The selected table
      * @param string       $idColumn    The name of the id column in the table
-     * @param int          $id          The id to update in the table
+     * @param int|string   $id          The id to update in the table
      * @param list<string> $fields      SQL fragments like "col = ?" or "col = NULL"
      * @param list<mixed>  $params      Parameters for the ? placeholders, in order
      * @param string       $types       mysqli bind_param types, matching $params (e.g. "sd")
@@ -173,10 +173,11 @@ abstract class DatabaseManager
     protected function executeUpdate(
         string $table,
         string $idColumn,
-        int $id,
+        int|string $id,
         array $fields = [],
         array $params = [],
-        string $types = ""
+        string $types = "",
+        string $idType = "i"
     ): bool {
         if ($id <= 0) {
             throw new mysqli_sql_exception('executeUpdate: id must be greater than 0.');
@@ -200,10 +201,10 @@ abstract class DatabaseManager
 
         if ($params !== []) {
             $params[] = $id;
-            $types   .= 'i';
+            $types   .= $idType;
             $statement->bind_param($types, ...$this->refValues($params));
         } else {
-            $statement->bind_param('i', $id);
+            $statement->bind_param($idType, $id);
         }
 
         $statement->execute();
@@ -255,7 +256,7 @@ abstract class DatabaseManager
     }
 
     /**
-     * @param list<mixed> $arr
+     * @param array<mixed> $arr
      * @return array<int, mixed>
      */
     private function refValues(array &$arr): array

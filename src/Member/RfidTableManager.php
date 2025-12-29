@@ -5,6 +5,7 @@ namespace Compucie\Database\Member;
 use Compucie\Database\Member\Exceptions\ActivationTokenNotFoundException;
 use Compucie\Database\Member\Exceptions\CardNotRegisteredException;
 use DateTime;
+use Exception;
 use mysqli;
 use mysqli_sql_exception;
 
@@ -78,7 +79,8 @@ trait RfidTableManager
     /**
      * Get hashed activation token info for a given card ID.
      * @param string $cardId ID of the card
-     * @return  array              Array with 'hashed_activation_token' and 'activation_token_valid_until' or null if not found
+     * @return array{hashed_activation_token: string, activation_token_valid_until: DateTime}
+     *      Array with 'hashed_activation_token' and 'activation_token_valid_until' or null if not found
      * @throws  mysqli_sql_exception
      * @throws  ActivationTokenNotFoundException
      * @throws Exception
@@ -140,6 +142,7 @@ trait RfidTableManager
             'card_id',
             $cardId,
             ['`is_email_confirmed` = TRUE','`hashed_activation_token` = NULL','`activation_token_valid_until` = NULL'],
+            idType: "s"
         );
     }
 
@@ -154,7 +157,8 @@ trait RfidTableManager
             'rfid',
             'card_id',
             $cardId,
-            ['`last_used_at` = CURRENT_TIMESTAMP']
+            ['`last_used_at` = CURRENT_TIMESTAMP'],
+            idType: "s"
         );
     }
 

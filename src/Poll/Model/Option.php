@@ -9,6 +9,12 @@ readonly class Option
 {
     private int    $voteCount;
 
+    /**
+     * @param int $id
+     * @param int $pollId
+     * @param string $text
+     * @param array<Vote> $votes
+     */
     public function __construct(
         private int    $id,
         private int    $pollId,

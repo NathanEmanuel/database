@@ -281,6 +281,7 @@ class PollDatabaseManagerTest extends TestCase
 
         $poll = $this->dbm->getPoll(1);
 
+        assertNotNull($poll);
         assertSame(1, $poll->getId());
         assertSame($question1, $poll->getQuestion());
 //        echo $poll->getPublishedAt()->format('Y-m-d H:i:s');
