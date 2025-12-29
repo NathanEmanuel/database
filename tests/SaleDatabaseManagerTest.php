@@ -2,6 +2,7 @@
 
 namespace Compucie\DatabaseTest;
 
+use Compucie\Database\Sale\Model\Product;
 use Compucie\Database\Sale\SaleDatabaseManager;
 use PHPUnit\Framework\TestCase;
 
@@ -80,5 +81,21 @@ class SaleDatabaseManagerTest extends TestCase
         assertSame(3, $productSales->getQuantityByWeek(1, 52, 2023));
         assertSame("3 Cookies", $productSales->getNameByWeek(1, 52, 2023));
         assertSame(69, $productSales->getUnitPriceByWeek(1, 52, 2023));
+    }
+
+    public function testUpdateProductTable(): void
+    {
+        $products = [
+            new Product(1, "Product 1", 99),
+            new Product(2, "Product 2", 420),
+            new Product(3, "Product 3"),
+        ];
+        $this->getDbm()->updateProductsTable($products);
+
+        $products = [
+            new Product(2, "Product 2", 67),
+            new Product(4, "Product 4", 0),
+        ];
+        $this->getDbm()->updateProductsTable($products);
     }
 }
