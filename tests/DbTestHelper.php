@@ -3,6 +3,7 @@
 namespace Compucie\DatabaseTest;
 
 use mysqli;
+use mysqli_sql_exception;
 use mysqli_stmt;
 use RuntimeException;
 
@@ -36,6 +37,46 @@ final readonly class DbTestHelper
         $statement->close();
 
         return $count;
+    }
+
+    /**
+     * Execute a query and return the first column of the first row.
+     *
+     * @param string      $sql
+     * @param array<mixed> $params
+     * @param string      $types
+     * @return mixed|null
+     * @throws mysqli_sql_exception
+     */
+    public function fetchOne(string $sql, array $params = [], string $types = '')
+    {
+        $statement = $this->db->prepare($sql);
+        if ($statement === false) {
+            throw new mysqli_sql_exception($this->db->error);
+        }
+
+        if ($params !== []) {
+            if ($types === '') {
+                throw new mysqli_sql_exception('fetchOne: types are required when having parameters.');
+            }
+            $statement->bind_param($types, ...$this->refValues($params));
+        }
+
+        $statement->execute();
+
+        $result = $statement->get_result();
+        if ($result === false) {
+            $statement->close();
+            throw new mysqli_sql_exception('fetchOne requires mysqlnd.');
+        }
+
+        $row = $result->fetch_row();
+        $value = $row !== null ? $row[0] : null;
+
+        $result->free();
+        $statement->close();
+
+        return $value;
     }
 
     /**
@@ -79,5 +120,18 @@ final readonly class DbTestHelper
             return $v;
         }, $params);
         $stmt->bind_param($types, ...$refs);
+    }
+
+    /**
+     * @param array<mixed> $arr
+     * @return array<int, mixed>
+     */
+    private function refValues(array &$arr): array
+    {
+        $refs = [];
+        foreach ($arr as $k => &$v) {
+            $refs[$k] = &$v;
+        }
+        return $refs;
     }
 }
