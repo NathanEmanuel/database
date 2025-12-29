@@ -37,12 +37,19 @@ class ProductSales implements JsonSerializable
 
     // Main getters
 
+    /**
+     * @return array<mixed>
+     */
     private function &getData(): array
     {
         return $this->data;
     }
 
-    private function &getByProductId(int $productId)
+    /**
+     * @param int $productId
+     * @return array<mixed>
+     */
+    private function &getByProductId(int $productId): array
     {
         $data = &$this->getData();
         if (!key_exists($productId, $data)) {
@@ -69,7 +76,7 @@ class ProductSales implements JsonSerializable
         return $data[$year];
     }
 
-    public function &getDataByWeek(string $key, int $productId, int $week, int $year = null): float|int|string
+    public function &getDataByWeek(string $key, int $productId, int $week, int $year = null): int|string
     {
         $year = $year ?? $this->presentYear;
 

@@ -214,9 +214,10 @@ abstract class DatabaseManager
     }
 
     /**
-     * @param string    $table
-     * @param string    $idColumn
-     * @param int       $id
+     * @param string $table
+     * @param string $idColumn
+     * @param int $id
+     * @param array<string> $conditions
      * @return bool indication if the deletion has succeeded
      * @throws mysqli_sql_exception
      */

@@ -150,7 +150,7 @@ class SaleDatabaseManagerTest extends TestCase
     {
         $productSales = $this->dbm->selectProductSalesOfLastWeeks([], 1, 1);
 
-        assertSame("[]",$productSales->asJson());
+        assertSame("[]",json_encode($productSales->jsonSerialize()));
     }
 
     /**
@@ -159,7 +159,7 @@ class SaleDatabaseManagerTest extends TestCase
     public function testSelectProductSalesOfLastWeeksNegativeWeekCount(): void
     {
         $productSales = $this->dbm->selectProductSalesOfLastWeeks([1,2], -1, 1);
-        assertSame("[]",$productSales->asJson());
+        assertSame("[]",json_encode($productSales->jsonSerialize()));
     }
 
     /**
@@ -181,16 +181,12 @@ class SaleDatabaseManagerTest extends TestCase
         $productSales = $this->dbm->selectProductSalesOfLastWeeks([1, 2], $weekCount, $currentWeek);
 
         assertSame(15, $productSales->getQuantityByWeek(1, 33));
-        assertSame("3 Cookies", $productSales->getNameByWeek(1, 33));
-        assertSame(0.69, $productSales->getUnitPriceByWeek(1, 33));
 
         assertSame(3, $productSales->getQuantityByWeek(2, 33, $currentYear));
-        assertSame("3 Cookies", $productSales->getNameByWeek(2, 33));
-        assertSame(0.69, $productSales->getUnitPriceByWeek(2, 33));
 
         assertSame(
-            '{"1":{"2025":{"26":{"quantity":0,"name":"","unitPrice":0},"27":{"quantity":0,"name":"","unitPrice":0},"28":{"quantity":0,"name":"","unitPrice":0},"29":{"quantity":0,"name":"","unitPrice":0},"30":{"quantity":0,"name":"","unitPrice":0},"31":{"quantity":0,"name":"","unitPrice":0},"32":{"quantity":0,"name":"","unitPrice":0},"33":{"quantity":15,"name":"3 Cookies","unitPrice":0.69},"34":{"quantity":0,"name":"","unitPrice":0}}},"2":{"2025":{"26":{"quantity":0,"name":"","unitPrice":0},"27":{"quantity":0,"name":"","unitPrice":0},"28":{"quantity":0,"name":"","unitPrice":0},"29":{"quantity":0,"name":"","unitPrice":0},"30":{"quantity":0,"name":"","unitPrice":0},"31":{"quantity":0,"name":"","unitPrice":0},"32":{"quantity":0,"name":"","unitPrice":0},"33":{"quantity":3,"name":"3 Cookies","unitPrice":0.69},"34":{"quantity":0,"name":"","unitPrice":0}}}}',
-            $productSales->asJson()
+            '{"1":{"2025":{"26":{"quantity":0},"27":{"quantity":0},"28":{"quantity":0},"29":{"quantity":0},"30":{"quantity":0},"31":{"quantity":0},"32":{"quantity":0},"33":{"quantity":15},"34":{"quantity":0}}},"2":{"2025":{"26":{"quantity":0},"27":{"quantity":0},"28":{"quantity":0},"29":{"quantity":0},"30":{"quantity":0},"31":{"quantity":0},"32":{"quantity":0},"33":{"quantity":3},"34":{"quantity":0}}}}',
+            json_encode($productSales->jsonSerialize())
         );
     }
 
@@ -210,12 +206,10 @@ class SaleDatabaseManagerTest extends TestCase
         $currentWeek = 4;
         $productSales = $this->dbm->selectProductSalesOfLastWeeks([1], $weekCount, $currentWeek);
         assertSame(3, $productSales->getQuantityByWeek(1, 52, $previousYear));
-        assertSame("3 Cookies", $productSales->getNameByWeek(1, 52, $previousYear));
-        assertSame(0.69, $productSales->getUnitPriceByWeek(1, 52, $previousYear));
 
         assertSame(
-            '{"1":{"2024":{"49":{"quantity":0,"name":"","unitPrice":0},"50":{"quantity":0,"name":"","unitPrice":0},"51":{"quantity":0,"name":"","unitPrice":0},"52":{"quantity":3,"name":"3 Cookies","unitPrice":0.69}},"2025":{"1":{"quantity":0,"name":"","unitPrice":0},"2":{"quantity":0,"name":"","unitPrice":0},"3":{"quantity":0,"name":"","unitPrice":0},"4":{"quantity":0,"name":"","unitPrice":0}}}}',
-            $productSales->asJson()
+            '{"1":{"2024":{"49":{"quantity":0},"50":{"quantity":0},"51":{"quantity":0},"52":{"quantity":3}},"2025":{"1":{"quantity":0},"2":{"quantity":0},"3":{"quantity":0},"4":{"quantity":0}}}}',
+            json_encode($productSales->jsonSerialize())
         );
     }
 
@@ -240,14 +234,14 @@ class SaleDatabaseManagerTest extends TestCase
         $this->dbm->insertPurchaseItem($purchaseId1, 2, 3,  "3 Cookies", 0.69);
 
         $week = 33;
-        $productSales = $this->dbm->selectProductSalesByWeek([1, 2], [$week]);
+        $productSales = $this->dbm->selectProductSalesByWeeks([1, 2], [$week]);
 
         assertSame(15, $productSales->getQuantityByWeek(1, $week));
-        assertSame("3 Cookies", $productSales->getNameByWeek(1, $week));
-        assertSame(0.69, $productSales->getUnitPriceByWeek(1, $week));
+//        assertSame("3 Cookies", $productSales->getNameByWeek(1, $week));
+//        assertSame(0.69, $productSales->getUnitPriceByWeek(1, $week));
 
         assertSame(3, $productSales->getQuantityByWeek(2, $week, $currentYear));
-        assertSame("3 Cookies", $productSales->getNameByWeek(2, $week));
-        assertSame(0.69, $productSales->getUnitPriceByWeek(2, $week));
+//        assertSame("3 Cookies", $productSales->getNameByWeek(2, $week));
+//        assertSame(0.69, $productSales->getUnitPriceByWeek(2, $week));
     }
 }

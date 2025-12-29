@@ -2,6 +2,7 @@
 
 namespace Compucie\Database\Member;
 
+use Compucie\Database\Member\Exceptions\ActivationTokenNotFoundException;
 use Compucie\Database\Member\Exceptions\CardNotRegisteredException;
 use DateTime;
 use mysqli;
@@ -86,8 +87,8 @@ trait RfidTableManager
     {
         $row = $this->executeReadOne(
             "SELECT `hashed_activation_token`, `activation_token_valid_until`
-         FROM `rfid`
-         WHERE `card_id` = ?",
+            FROM `rfid`
+            WHERE `card_id` = ?",
             [$cardId],
             "s"
         );
@@ -117,7 +118,7 @@ trait RfidTableManager
      * @param   bool        $isEmailConfirmed       Whether the member confirmed their registration
      * @throws  mysqli_sql_exception
      */
-    public function insertRfid(string $cardId, int $congressusMemberId, bool $isEmailConfirmed = false): bool
+    public function insertRfid(string $cardId, int $congressusMemberId, string $hashedActivationToken, DateTime $activationTokenValidUntil, bool $isEmailConfirmed = false): bool
     {
         return $this->executeCreate(
                 'rfid',
@@ -147,12 +148,14 @@ trait RfidTableManager
      * @param   string      $cardId     ID of the card to update
      * @throws  mysqli_sql_exception
      */
-    public function updateLastUsedAt(string $cardId): void
+    public function updateLastUsedAt(string $cardId): bool
     {
-        $statement = $this->getClient()->prepare("UPDATE `rfid` SET `last_used_at` = CURRENT_TIMESTAMP WHERE `card_id` = ?");
-        $statement->bind_param("s", $cardId);
-        $statement->execute();
-        $statement->close();
+        return $this->executeUpdate(
+            'rfid',
+            'card_id',
+            $cardId,
+            ['`last_used_at` = CURRENT_TIMESTAMP']
+        );
     }
 
     /**
@@ -166,9 +169,7 @@ trait RfidTableManager
             'rfid',
             'congressus_member_id',
             $congressusMemberId,
-            '`is_email_confirmed` = TRUE'
+            ['`is_email_confirmed` = TRUE']
         );
     }
 }
-
-class ActivationTokenNotFoundException extends \Exception {}

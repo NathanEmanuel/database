@@ -3,7 +3,9 @@
 namespace Compucie\DatabaseTest;
 
 use Compucie\Database\Member\Exceptions\CardNotRegisteredException;
+use DateTime;
 use PHPUnit\Framework\TestCase;
+use Random\RandomException;
 use function PHPUnit\Framework\assertFalse;
 use function PHPUnit\Framework\assertSame;
 use function PHPUnit\Framework\assertTrue;
@@ -45,36 +47,69 @@ class MemberDatabaseManagerTest extends TestCase
     }
 
     /**
+     * @return array{
+     *     hashedActivationToken: string,
+     *     activationTokenValidUntil: DateTime
+     * }
+     * @throws RandomException
+     */
+    private function generateActivationTokenData(): array
+    {
+        $activationToken = rtrim(
+            strtr(base64_encode(random_bytes(32)), '+/', '-_'),
+            '='
+        );
+
+        return [
+            'hashedActivationToken' => hash('sha256', $activationToken),
+            'activationTokenValidUntil' => (new DateTime())->modify('+7 days'),
+        ];
+    }
+
+    /**
      * @throws CardNotRegisteredException
+     * @throws RandomException
      */
     public function testGetCongressusMemberIdFromCardId(): void
     {
-        $this->dbm->insertRfid("deadbeaf", 123);
+        $tokenData = $this->generateActivationTokenData();
+
+        $this->dbm->insertRfid("deadbeaf", 123, $tokenData['hashedActivationToken'], $tokenData['activationTokenValidUntil']);
         $congressusMemberId = $this->dbm->getCongressusMemberIdFromCardId("deadbeaf");
         assertSame(1, $this->dbh->rowCount('rfid'));
         assertSame(123, $congressusMemberId);
     }
 
-    public function testIsRfidCardRegistered(): void
+    /**
+     * @throws RandomException
+     */
+    public function testIsRfidCardActivated(): void
     {
-        $this->dbm->insertRfid("deadbeaf", 123, true);
+        $tokenData = $this->generateActivationTokenData();
+
+        $this->dbm->insertRfid("deadbeaf", 123, $tokenData['hashedActivationToken'], $tokenData['activationTokenValidUntil'], true);
         assertSame(1, $this->dbh->rowCount('rfid'));
-        $registered = $this->dbm->isRfidCardRegistered("deadbeaf");
+        $registered = $this->dbm->isRfidCardActivated("deadbeaf");
 
         assertTrue($registered);
     }
 
-    public function testIsRfidCardRegisteredNot(): void
+    public function testIsRfidCardActivatedNot(): void
     {
         assertSame(0, $this->dbh->rowCount('rfid'));
-        $registered = $this->dbm->isRfidCardRegistered("deadbeaf");
+        $registered = $this->dbm->isRfidCardActivated("deadbeaf");
 
         assertFalse($registered);
     }
 
+    /**
+     * @throws RandomException
+     */
     public function testInsertRfid(): void
     {
-        $this->dbm->insertRfid("deadbeaf", 123);
+        $tokenData = $this->generateActivationTokenData();
+
+        $this->dbm->insertRfid("deadbeaf", 123, $tokenData['hashedActivationToken'], $tokenData['activationTokenValidUntil']);
 
         assertSame(1, $this->dbh->rowCount('rfid'));
         assertSame(1, $this->dbh->rowCount(
@@ -83,9 +118,14 @@ class MemberDatabaseManagerTest extends TestCase
         ));
     }
 
+    /**
+     * @throws RandomException
+     */
     public function testInsertRfidEmailConfirmed(): void
     {
-        $this->dbm->insertRfid("deadbeaf", 123, true);
+        $tokenData = $this->generateActivationTokenData();
+
+        $this->dbm->insertRfid("deadbeaf", 123, $tokenData['hashedActivationToken'], $tokenData['activationTokenValidUntil'], true);
 
         assertSame(1, $this->dbh->rowCount('rfid'));
         assertSame(1, $this->dbh->rowCount(
@@ -94,13 +134,18 @@ class MemberDatabaseManagerTest extends TestCase
         ));
     }
 
-    public function testDeleteMembersRfidRegistrations(): void
+    /**
+     * @throws RandomException
+     */
+    public function testDeleteMembersActivatedRegistrations(): void
     {
-        $this->dbm->insertRfid("deadbeaf", 123, true);
+        $tokenData = $this->generateActivationTokenData();
+
+        $this->dbm->insertRfid("deadbeaf", 123, $tokenData['hashedActivationToken'], $tokenData['activationTokenValidUntil'], true);
 
         assertSame(1, $this->dbh->rowCount('rfid'));
 
-        $this->dbm->deleteMembersRfidRegistrations(123);
+        $this->dbm->deleteMembersActivatedRegistrations(123);
 
         assertSame(0, $this->dbh->rowCount('rfid'));
     }
