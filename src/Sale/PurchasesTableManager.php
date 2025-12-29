@@ -11,7 +11,7 @@ trait PurchasesTableManager
     protected function createPurchasesTable(): void
     {
         $statement = $this->getClient()->prepare(
-            "CREATE TABLE `purchases` (
+            "CREATE TABLE IF NOT EXISTS `purchases` (
                 `purchase_id` INT NOT NULL UNIQUE AUTO_INCREMENT,
                 `purchased_at` DATETIME DEFAULT NOW(),
                 `price` DECIMAL(10,2) DEFAULT NULL,
@@ -24,6 +24,8 @@ trait PurchasesTableManager
 
     public function insertPurchase(): int
     {
+        $purchaseId = 0;
+
         $statement = $this->getClient()->prepare("INSERT INTO `purchases` () VALUES ();");
         $statement->execute();
         $statement = $this->getClient()->prepare("SELECT LAST_INSERT_ID();");

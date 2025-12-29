@@ -3,6 +3,7 @@
 namespace Compucie\Database;
 
 use mysqli;
+use mysqli_sql_exception;
 
 abstract class DatabaseManager
 {

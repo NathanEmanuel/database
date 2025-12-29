@@ -3,7 +3,6 @@
 namespace Compucie\Database\Member;
 
 use Compucie\Database\DatabaseManager;
-use Exception;
 
 class MemberDatabaseManager extends DatabaseManager
 {
@@ -16,5 +15,3 @@ class MemberDatabaseManager extends DatabaseManager
         $this->createRfidTable();
     }
 }
-
-class CardNotRegisteredException extends Exception {}

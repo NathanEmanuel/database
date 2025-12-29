@@ -2,6 +2,7 @@
 
 namespace Compucie\DatabaseTest;
 
+use Compucie\Database\Sale\Exceptions\WeekDoesNotExistException;
 use Compucie\Database\Sale\SaleDatabaseManager;
 use PHPUnit\Framework\TestCase;
 
@@ -59,6 +60,9 @@ class SaleDatabaseManagerTest extends TestCase
         assertSame(69, $productSales->getUnitPriceByWeek(2, $week));
     }
 
+    /**
+     * @throws WeekDoesNotExistException
+     */
     public function testSelectProductSalesOfLastWeeks(): void
     {
         $currentWeek = 42;

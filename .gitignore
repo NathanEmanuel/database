@@ -2,3 +2,4 @@
 /config/
 beun.php
 .env
+tests/.env

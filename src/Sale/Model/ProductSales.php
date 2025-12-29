@@ -2,11 +2,12 @@
 
 namespace Compucie\Database\Sale\Model;
 
+use DateTime;
 use JsonSerializable;
 
 /**
  * Data structure:
- * 
+ *
  * productId
  *     year
  *         week
@@ -19,7 +20,7 @@ class ProductSales implements JsonSerializable
 
     public function __construct()
     {
-        $this->presentYear = intval((new \DateTime)->format('Y'));
+        $this->presentYear = intval((new DateTime)->format('Y'));
     }
 
 

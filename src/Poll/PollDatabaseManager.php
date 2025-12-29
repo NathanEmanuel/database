@@ -6,13 +6,15 @@ use Compucie\Database\DatabaseManager;
 use Compucie\Database\Poll\Model\Options;
 use Compucie\Database\Poll\Model\Poll;
 use DateTime;
+use Exception;
+use mysqli_sql_exception;
 
 class PollDatabaseManager extends DatabaseManager
 {
     public function createTables(): void
     {
         $statement = $this->getClient()->prepare(
-            "CREATE TABLE `polls` (
+            "CREATE TABLE IF NOT EXISTS `polls` (
                 `poll_id` INT NOT NULL AUTO_INCREMENT,
                 `question` VARCHAR(255) NOT NULL,
                 `published_at` DATETIME NOT NULL DEFAULT UTC_TIMESTAMP(),
@@ -58,6 +60,8 @@ class PollDatabaseManager extends DatabaseManager
      */
     public function getActivePollIds(): array
     {
+        $activePollId = 0;
+
         $statement = $this->getClient()->prepare("SELECT `poll_id` FROM `polls` WHERE `expires_at` > NOW() OR `expires_at` IS NULL");
         $statement->bind_result($activePollId);
         $statement->execute();
@@ -75,6 +79,7 @@ class PollDatabaseManager extends DatabaseManager
      * Return the currently active polls.
      * @return  Poll[]  The currently active polls.
      * @throws  mysqli_sql_exception
+     * @throws Exception
      */
     public function getActivePolls(): array
     {
@@ -85,8 +90,13 @@ class PollDatabaseManager extends DatabaseManager
         return $activePolls;
     }
 
+    /**
+     * @throws Exception
+     */
     public function getMostRecentlyExpiredPoll(): Poll
     {
+        $pollId = 0;
+
         $statement = $this->getClient()->prepare("SELECT `poll_id` FROM `polls` WHERE NOW() > `expires_at` ORDER BY `expires_at` DESC LIMIT 1");
         $statement->bind_result($pollId);
         $statement->execute();
@@ -100,10 +110,12 @@ class PollDatabaseManager extends DatabaseManager
      * Return the latest polls. The amount is limited by the given value.
      * @param   int     $max    The maximum amount of polls to get.
      * @return  Poll[]          Array containing the retrieved polls.
-     * @throws  mysqli_sql_exception
+     * @throws  mysqli_sql_exception|Exception
      */
     public function getLatestPolls(int $max): array
     {
+        $pollId = 0;
+
         $statement = $this->getClient()->prepare("SELECT `poll_id` FROM `polls` ORDER BY `poll_id` DESC LIMIT ?");
         $statement->bind_param("i", $max);
         $statement->bind_result($pollId);
@@ -132,6 +144,8 @@ class PollDatabaseManager extends DatabaseManager
      */
     public function hasUserVoted(int $pollId, int $userId): bool
     {
+        $voteCount = 0;
+
         $statement = $this->getClient()->prepare("SELECT COUNT(*) FROM `votes` WHERE `poll_id` = ? AND `user_id` = ?");
         $statement->bind_param("ii", $pollId, $userId);
         $statement->bind_result($voteCount);
@@ -169,7 +183,8 @@ class PollDatabaseManager extends DatabaseManager
     public function addPoll(string $question, DateTime $expiresAt): void
     {
         $statement = $this->getClient()->prepare("INSERT INTO `polls` (`question`, `expires_at`) VALUES (?, ?)");
-        $statement->bind_param("ss", $question, $expiresAt->format(self::SQL_DATETIME_FORMAT));
+        $format = $expiresAt->format(self::SQL_DATETIME_FORMAT);
+        $statement->bind_param("ss", $question, $format);
         $statement->execute();
         $statement->close();
     }
@@ -204,7 +219,7 @@ class PollDatabaseManager extends DatabaseManager
     /**
      * Add a vote.
      * @param   int     $pollId     ID of the poll on which was voted.
-     * @param   int     $usedId     ID of the user who voted.
+     * @param   int     $userId     ID of the user who voted.
      * @param   int     $optionId   ID of the option that was chosen.
      * @throws  mysqli_sql_exception
      */
@@ -221,10 +236,14 @@ class PollDatabaseManager extends DatabaseManager
      * as well as the total vote count.
      * @param   int     $pollId     ID of the poll to get.
      * @return  Poll                The poll with the given ID.
-     * @throws  mysqli_sql_exception
+     * @throws  mysqli_sql_exception|Exception
      */
     public function getPoll(int $pollId): Poll
     {
+        $question = "";
+        $publishedAt = "";
+        $expiresAt = "";
+
         $statement = $this->getClient()->prepare("SELECT `question`, `published_at`, `expires_at` FROM `polls` WHERE `poll_id` = ?");
         $statement->bind_param("i", $pollId);
         $statement->bind_result($question, $publishedAt, $expiresAt);
@@ -246,6 +265,9 @@ class PollDatabaseManager extends DatabaseManager
      */
     private function getOptions(int $pollId): Options
     {
+        $id = 0;
+        $answer = "";
+
         $statement = $this->getClient()->prepare("SELECT `option_id`, `text` FROM `options` WHERE `poll_id` = ?");
         $statement->bind_param("i", $pollId);
         $statement->bind_result($id, $answer);
@@ -270,6 +292,9 @@ class PollDatabaseManager extends DatabaseManager
      */
     private function getVoteCounts(int $pollId, Options $options): Options
     {
+        $voteCount = 0;
+        $optionId = 0;
+
         $statement = $this->getClient()->prepare("SELECT COUNT(*) FROM `votes` WHERE `poll_id` = ? AND `option_id` = ?");
         $statement->bind_param("ii", $pollId, $optionId);
         $statement->bind_result($voteCount);
@@ -292,6 +317,8 @@ class PollDatabaseManager extends DatabaseManager
      */
     private function getPollVoteCount(int $pollId): int
     {
+        $voteCount = 0;
+
         $statement = $this->getClient()->prepare("SELECT COUNT(*) FROM `votes` WHERE `poll_id` = ?");
         $statement->bind_param("i", $pollId);
         $statement->bind_result($voteCount);

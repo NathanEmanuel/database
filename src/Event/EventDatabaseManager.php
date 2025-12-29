@@ -4,13 +4,14 @@ namespace Compucie\Database\Event;
 
 use Compucie\Database\DatabaseManager;
 use DateTime;
+use mysqli_sql_exception;
 
 class EventDatabaseManager extends DatabaseManager
 {
     public function createTables(): void
     {
         $statement = $this->getClient()->prepare(
-            "CREATE TABLE `pins` (
+            "CREATE TABLE IF NOT EXISTS `pins` (
                 `pin_id` INT NOT NULL AUTO_INCREMENT UNIQUE,
                 `event_id` INT NOT NULL,
                 `start_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -29,6 +30,8 @@ class EventDatabaseManager extends DatabaseManager
      */
     public function getCurrentlyPinnedEventIds(): array
     {
+        $eventId = 0;
+
         $statement = $this->getClient()->prepare("SELECT `event_id` FROM `pins` WHERE (NOW() BETWEEN start_at AND end_at) OR (NOW() > start_at AND end_at IS NULL);");
         $statement->bind_result($eventId);
         $statement->execute();

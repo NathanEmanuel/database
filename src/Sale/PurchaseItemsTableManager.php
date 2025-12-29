@@ -2,7 +2,9 @@
 
 namespace Compucie\Database\Sale;
 
+use Compucie\Database\Sale\Exceptions\WeekDoesNotExistException;
 use Compucie\Database\Sale\Model\ProductSales;
+use DateTime;
 use mysqli;
 
 trait PurchaseItemsTableManager
@@ -12,7 +14,7 @@ trait PurchaseItemsTableManager
     protected function createPurchaseItemsTable(): void
     {
         $statement = $this->getClient()->prepare(
-            "CREATE TABLE `purchase_items` (
+            "CREATE TABLE IF NOT EXISTS `purchase_items` (
                 `purchase_item_id` INT NOT NULL UNIQUE AUTO_INCREMENT,
                 `purchase_id` INT NOT NULL,
                 `product_id` INT NOT NULL,
@@ -35,12 +37,15 @@ trait PurchaseItemsTableManager
         $statement->close();
     }
 
+    /**
+     * @throws WeekDoesNotExistException
+     */
     public function selectProductSalesOfLastWeeks(array $productIds, int $weekCount, int $currentWeek = null): ProductSales
     {
-        $currentWeek = $currentWeek ?? intval((new \DateTime())->format('W'));
+        $currentWeek = $currentWeek ?? intval((new DateTime())->format('W'));
 
         if (1 > $currentWeek || $currentWeek > 52) throw new WeekDoesNotExistException;
-        if (count($productIds) <= 0 || $weekCount <= 0) return array();
+        if (count($productIds) <= 0 || $weekCount <= 0) return new ProductSales();
 
         $weekDifference = $weekCount - 1;
 
@@ -52,7 +57,7 @@ trait PurchaseItemsTableManager
             // first week(s) are in previous year
 
             $firstWeekToRetrieve = 52 - ($weekDifference - $currentWeek);
-            $thisYear = intval((new \DateTime())->format('Y'));
+            $thisYear = intval((new DateTime())->format('Y'));
 
             $productSalesLastYear = $this->selectProductSalesByWeeks($productIds, range($firstWeekToRetrieve, 52), $thisYear - 1);
             $productSalesThisYear = $this->selectProductSalesByWeeks($productIds, range(1, $currentWeek));
@@ -69,9 +74,9 @@ trait PurchaseItemsTableManager
     /**
      * Return the product sales data for the given products in the given weeks of the given year.
      *
-     * @param   int[]   $productId      Product IDs.
-     * @param   int[]   $weeks          Week numbers.
-     * @param   int     $year           [Optional] The year in which the week number applies.
+     * @param   int[]        $productIds     Array of product IDs.
+     * @param   int[]        $weeks          Array of week numbers.
+     * @param   int|null     $year           [Optional] The year in which the week numbers apply.
      * @return  ProductSales
      */
     public function selectProductSalesByWeeks(array $productIds, array $weeks, int $year = null): ProductSales
@@ -84,6 +89,8 @@ trait PurchaseItemsTableManager
         );
         foreach ($productIds as $productId) {
             foreach ($weeks as $week) {
+                $quantity = 0;
+
                 $weekDates = self::getWeekDates($week, $year);
                 $statement->bind_param("iss", $productId, $weekDates['start'], $weekDates['end']);
                 $statement->bind_result($quantity);
@@ -104,7 +111,7 @@ trait PurchaseItemsTableManager
     private static function getWeekDates(int $week, int $year = null): array
     {
         $year = $year ?? intval(date("Y"));
-        $dto = new \DateTime();
+        $dto = new DateTime();
         $dto->setISODate($year, $week);
         $dates['start'] = $dto->format('Y-m-d');
         $dto->modify('+6 days');
@@ -112,5 +119,3 @@ trait PurchaseItemsTableManager
         return $dates;
     }
 }
-
-class WeekDoesNotExistException extends \Exception {}

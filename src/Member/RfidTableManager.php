@@ -2,8 +2,10 @@
 
 namespace Compucie\Database\Member;
 
+use Compucie\Database\Member\Exceptions\CardNotRegisteredException;
 use DateTime;
 use mysqli;
+use mysqli_sql_exception;
 
 trait RfidTableManager
 {
@@ -12,7 +14,7 @@ trait RfidTableManager
     protected function createRfidTable(): void
     {
         $statement = $this->getClient()->prepare(
-            "CREATE TABLE `rfid` (
+            "CREATE TABLE IF NOT EXISTS `rfid` (
                 `card_id` VARCHAR(14) NOT NULL,
                 `congressus_member_id` INT NOT NULL,
                 `hashed_activation_token` VARCHAR(255) DEFAULT NULL,
@@ -35,6 +37,8 @@ trait RfidTableManager
      */
     public function getCongressusMemberIdFromCardId(string $cardId): int
     {
+        $congressusMemberId = 0;
+
         $statement = $this->getClient()->prepare("SELECT `congressus_member_id` FROM `rfid` WHERE `card_id` = ?");
         $statement->bind_param("s", $cardId);
         $statement->bind_result($congressusMemberId);
@@ -57,6 +61,8 @@ trait RfidTableManager
      */
     public function isRfidCardActivated(string $cardId): bool
     {
+        $count = 0;
+
         $statement = $this->getClient()->prepare("SELECT COUNT(*) FROM `rfid` WHERE `card_id` = ? AND `is_email_confirmed` = TRUE");
         $statement->bind_param("s", $cardId);
         $statement->bind_result($count);
@@ -69,10 +75,11 @@ trait RfidTableManager
 
     /**
      * Get hashed activation token info for a given card ID.
-     * @param   string      $cardId     ID of the card
-     * @return  array|null              Array with 'hashed_activation_token' and 'activation_token_valid_until' or null if not found
+     * @param string $cardId ID of the card
+     * @return  array              Array with 'hashed_activation_token' and 'activation_token_valid_until' or null if not found
      * @throws  mysqli_sql_exception
      * @throws  ActivationTokenNotFoundException
+     * @throws Exception
      */
     public function getActivationTokenInfo(string $cardId): array
     {

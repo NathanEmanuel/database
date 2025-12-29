@@ -3,6 +3,7 @@
 namespace Compucie\Database\Member;
 
 use mysqli;
+use mysqli_sql_exception;
 
 trait BirthdaysTableManager
 {
@@ -11,7 +12,7 @@ trait BirthdaysTableManager
     protected function createBirthdaysTable(): void
     {
         $statement = $this->getClient()->prepare(
-            "CREATE TABLE `screen_birthdays` (
+            "CREATE TABLE IF NOT EXISTS `screen_birthdays` (
                 `id` INT NOT NULL AUTO_INCREMENT,
                 `member_id` INT NOT NULL,
                 `date_of_birth` DATE NOT NULL,
@@ -29,6 +30,8 @@ trait BirthdaysTableManager
      */
     public function getMemberIdsWithBirthdayToday(): array
     {
+        $memberId = 0;
+
         $statement = $this->getClient()->prepare(
             "SELECT `member_id` FROM `screen_birthdays`
             WHERE DAY(date_of_birth) = DAY(CURRENT_DATE())
