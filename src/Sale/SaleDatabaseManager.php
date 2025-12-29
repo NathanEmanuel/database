@@ -8,10 +8,12 @@ class SaleDatabaseManager extends DatabaseManager
 {
     use PurchasesTableManager;
     use PurchaseItemsTableManager;
+    use ProductsTableManager;
 
     public function createTables(): void
     {
         $this->createPurchasesTable();
         $this->createPurchaseItemsTable();
+        $this->createProductsTable();
     }
 }

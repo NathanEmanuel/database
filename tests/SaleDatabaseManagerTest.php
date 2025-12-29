@@ -237,11 +237,22 @@ class SaleDatabaseManagerTest extends TestCase
         $productSales = $this->dbm->selectProductSalesByWeeks([1, 2], [$week]);
 
         assertSame(15, $productSales->getQuantityByWeek(1, $week));
-//        assertSame("3 Cookies", $productSales->getNameByWeek(1, $week));
-//        assertSame(0.69, $productSales->getUnitPriceByWeek(1, $week));
-
         assertSame(3, $productSales->getQuantityByWeek(2, $week, $currentYear));
-//        assertSame("3 Cookies", $productSales->getNameByWeek(2, $week));
-//        assertSame(0.69, $productSales->getUnitPriceByWeek(2, $week));
+    }
+
+    public function testUpdateProductTable(): void
+    {
+        $products = [
+            new Product(1, "Product 1", 99),
+            new Product(2, "Product 2", 420),
+            new Product(3, "Product 3"),
+        ];
+        $this->getDbm()->updateProductsTable($products);
+
+        $products = [
+            new Product(2, "Product 2", 67),
+            new Product(4, "Product 4", 0),
+        ];
+        $this->getDbm()->updateProductsTable($products);
     }
 }

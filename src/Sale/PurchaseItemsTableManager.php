@@ -61,7 +61,7 @@ trait PurchaseItemsTableManager
      * @return ProductSales
      * @throws WeekDoesNotExistException
      */
-    public function selectProductSalesOfLastWeeks(array $productIds, int $weekCount, int $currentWeek = null): ProductSales
+    public function selectProductSalesOfLastWeeks(array $productIds, int $weekCount, ?int $currentWeek = null): ProductSales
     {
         $currentWeek = $currentWeek ?? intval((new DateTime())->format('W'));
 
@@ -138,7 +138,7 @@ trait PurchaseItemsTableManager
      * @param int|null $year
      * @return array<string, string>
      */
-    private static function getWeekDates(int $week, int $year = null): array
+    private static function getWeekDates(int $week, ?int $year = null): array
     {
         $year = $year ?? intval(date("Y"));
         $dto = new DateTime();
