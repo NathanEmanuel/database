@@ -216,7 +216,8 @@ abstract class DatabaseManager
     protected function executeDelete(
         string $table,
         string $idColumn,
-        int $id
+        int $id,
+        array $conditions = [],
     ): bool {
         if ($id <= 0) {
             throw new mysqli_sql_exception('executeDelete: id must be greater than 0.');
@@ -227,6 +228,10 @@ abstract class DatabaseManager
             str_replace('`', '``', $table),
             str_replace('`', '``', $idColumn)
         );
+
+        if ($conditions !== []) {
+            $sql .= ' AND ' . implode(' AND ', $conditions);
+        }
 
         $statement = $this->getClient()->prepare($sql);
         if ($statement === false) {

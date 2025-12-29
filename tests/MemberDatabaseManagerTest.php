@@ -40,7 +40,7 @@ class MemberDatabaseManagerTest extends TestCase
     {
         $this->expectException(CardNotRegisteredException::class);
         $this->expectExceptionMessage("Card is not registered.");
-        $congressusMemberId = $this->dbm->getCongressusMemberIdFromCardId("deadbeaf");
+        $this->dbm->getCongressusMemberIdFromCardId("deadbeaf");
         assertSame(0, $this->dbh->rowCount('rfid'));
     }
 

@@ -39,22 +39,19 @@ trait RfidTableManager
      */
     public function getCongressusMemberIdFromCardId(string $cardId): int
     {
-        $congressusMemberId = 0;
+        $row = $this->executeReadOne(
+            "SELECT `congressus_member_id`
+         FROM `rfid`
+         WHERE `card_id` = ?",
+            [$cardId],
+            "s"
+        );
 
-        $statement = $this->getClient()->prepare("SELECT `congressus_member_id` FROM `rfid` WHERE `card_id` = ?");
-        if ($statement) {
-            $statement->bind_param("s", $cardId);
-            $statement->bind_result($congressusMemberId);
-            $statement->execute();
-            $statement->fetch();
-            $statement->close();
-
-            if (is_null($congressusMemberId) || $congressusMemberId === 0) {
-                throw new CardNotRegisteredException;
-            }
+        if ($row === null || (int)$row['congressus_member_id'] === 0) {
+            throw new CardNotRegisteredException();
         }
 
-        return $congressusMemberId;
+        return (int)$row['congressus_member_id'];
     }
 
     /**
@@ -65,19 +62,17 @@ trait RfidTableManager
      */
     public function isRfidCardActivated(string $cardId): bool
     {
-        $count = 0;
-
-        $statement = $this->getClient()->prepare("SELECT COUNT(*) FROM `rfid` WHERE `card_id` = ? AND `is_email_confirmed` = TRUE");
-        if ($statement) {
-            $statement->bind_param("s", $cardId);
-            $statement->bind_result($count);
-            $statement->execute();
-            $statement->fetch();
-            $statement->close();
-        }
-
-        return $count > 0;
+        return $this->executeReadOne(
+            "SELECT 1
+            FROM `rfid`
+            WHERE `card_id` = ?
+                AND `is_email_confirmed` = TRUE
+            LIMIT 1",
+            [$cardId],
+            "s"
+        ) !== null;
     }
+
 
     /**
      * Get hashed activation token info for a given card ID.
@@ -89,20 +84,27 @@ trait RfidTableManager
      */
     public function getActivationTokenInfo(string $cardId): array
     {
-        $statement = $this->getClient()->prepare("SELECT `hashed_activation_token`, `activation_token_valid_until` FROM `rfid` WHERE `card_id` = ?");
-        $statement->bind_param("s", $cardId);
-        $statement->bind_result($hashedActivationToken, $activationTokenValidUntil);
-        $statement->execute();
-        $statement->fetch();
-        $statement->close();
+        $row = $this->executeReadOne(
+            "SELECT `hashed_activation_token`, `activation_token_valid_until`
+         FROM `rfid`
+         WHERE `card_id` = ?",
+            [$cardId],
+            "s"
+        );
 
-        if (is_null($hashedActivationToken) || is_null($activationTokenValidUntil)) {
+        if (
+            $row === null ||
+            $row['hashed_activation_token'] === null ||
+            $row['activation_token_valid_until'] === null
+        ) {
             throw new ActivationTokenNotFoundException();
         }
 
         return [
-            'hashed_activation_token' => $hashedActivationToken,
-            'activation_token_valid_until' => new DateTime($activationTokenValidUntil),
+            'hashed_activation_token' => (string)$row['hashed_activation_token'],
+            'activation_token_valid_until' => new DateTime(
+                (string)$row['activation_token_valid_until']
+            ),
         ];
     }
 
@@ -115,14 +117,14 @@ trait RfidTableManager
      * @param   bool        $isEmailConfirmed       Whether the member confirmed their registration
      * @throws  mysqli_sql_exception
      */
-    public function insertRfid(string $cardId, int $congressusMemberId, string $hashedActivationToken, DateTime $activationTokenValidUntil, bool $isEmailConfirmed = FALSE): void
+    public function insertRfid(string $cardId, int $congressusMemberId, bool $isEmailConfirmed = false): bool
     {
-        $statement = $this->getClient()->prepare("INSERT INTO `rfid` (`card_id`, `congressus_member_id`, `hashed_activation_token`, `activation_token_valid_until`, `is_email_confirmed`) VALUES (?, ?, ?, ?, ?)");
-        if ($statement) {
-            $statement->bind_param("sissi", $cardId, $congressusMemberId, $hashedActivationToken, $activationTokenValidUntil->format("Y-m-d H:i:s"), $isEmailConfirmed);
-            $statement->execute();
-            $statement->close();
-        }
+        return $this->executeCreate(
+                'rfid',
+                ['`card_id`','`congressus_member_id`','`hashed_activation_token`','`activation_token_valid_until`','`is_email_confirmed`'],
+                [$cardId, $congressusMemberId, $hashedActivationToken, $activationTokenValidUntil->format(self::SQL_DATETIME_FORMAT), (int)$isEmailConfirmed],
+                'sissi'
+            ) !== -1;
     }
 
     /**
@@ -130,14 +132,14 @@ trait RfidTableManager
      * @param   string      $cardId     ID of the card to activate
      * @throws  mysqli_sql_exception
      */
-    public function activateCard(string $cardId): void
+    public function activateCard(string $cardId): bool
     {
-        $statement = $this->getClient()->prepare("UPDATE `rfid` SET `is_email_confirmed` = TRUE, `hashed_activation_token` = NULL, `activation_token_valid_until` = NULL WHERE `card_id` = ?");
-        if ($statement) {
-            $statement->bind_param("s", $cardId);
-            $statement->execute();
-            $statement->close();
-        }
+        return $this->executeUpdate(
+            'rfid',
+            'card_id',
+            $cardId,
+            ['`is_email_confirmed` = TRUE','`hashed_activation_token` = NULL','`activation_token_valid_until` = NULL'],
+        );
     }
 
     /**
@@ -158,14 +160,14 @@ trait RfidTableManager
      * @param   int     $congressusMemberId     Member whose registrations to delete
      * @throws  mysqli_sql_exception
      */
-    public function deleteMembersActivatedRegistrations(int $congressusMemberId): void
+    public function deleteMembersActivatedRegistrations(int $congressusMemberId): bool
     {
-        $statement = $this->getClient()->prepare("DELETE FROM `rfid` WHERE `congressus_member_id` = ? AND `is_email_confirmed` = TRUE");
-        if ($statement) {
-            $statement->bind_param("i", $congressusMemberId);
-            $statement->execute();
-            $statement->close();
-        }
+        return $this->executeDelete(
+            'rfid',
+            'congressus_member_id',
+            $congressusMemberId,
+            '`is_email_confirmed` = TRUE'
+        );
     }
 }
 

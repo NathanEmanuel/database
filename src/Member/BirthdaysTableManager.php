@@ -32,25 +32,15 @@ trait BirthdaysTableManager
      */
     public function getMemberIdsWithBirthdayToday(): array
     {
-        $memberId = 0;
-        $memberIds = array();
-
-        $statement = $this->getClient()->prepare(
-            "SELECT `member_id` FROM `screen_birthdays`
-            WHERE DAY(date_of_birth) = DAY(CURRENT_DATE())
-		    AND MONTH(date_of_birth) = MONTH(CURRENT_DATE());"
+        $rows = $this->executeReadAll(
+            "SELECT `member_id`
+            FROM `screen_birthdays`
+            WHERE DATE_FORMAT(`date_of_birth`, '%m-%d') = DATE_FORMAT(CURRENT_DATE(), '%m-%d')"
         );
-        if ($statement) {
-            $statement->bind_result($memberId);
-            $statement->execute();
 
-            while ($statement->fetch()) {
-                $memberIds[] = $memberId;
-            }
-
-            $statement->close();
-        }
-
-        return $memberIds;
+        return array_map(
+            static fn(array $row): int => (int)$row['member_id'],
+            $rows
+        );
     }
 }
