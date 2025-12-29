@@ -27,7 +27,10 @@
     "scripts": {
         "phpstan-base" : "vendor/bin/phpstan analyse src tests -b -l 8",
         "phpstan-check" : "vendor/bin/phpstan analyse -c phpstan.neon",
-        "test": "vendor/bin/phpunit --fail-on-empty-test-suite --display-errors --display-notices --display-warnings --display-all-issues --teamcity"
+        "test": [
+            "Composer\\Config::disableProcessTimeout",
+            "vendor/bin/phpunit --teamcity"
+        ]
     }
 }
 
