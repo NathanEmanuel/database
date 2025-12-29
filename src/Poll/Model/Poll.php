@@ -9,12 +9,20 @@ use DateTime;
  */
 readonly class Poll
 {
+    /**
+     * @param int $id
+     * @param string $question
+     * @param DateTime $publishedAt
+     * @param DateTime $expiresAt
+     * @param array<Option> $options
+     * @param int $voteCount
+     */
     public function __construct(
         private int      $id,
         private string   $question,
         private DateTime $publishedAt,
         private DateTime $expiresAt,
-        private Options  $options,
+        private array  $options,
         private int      $voteCount,
     ) {
     }
@@ -39,7 +47,10 @@ readonly class Poll
         return $this->expiresAt;
     }
 
-    public function getOptions(): Options
+    /**
+     * @return array<Option>
+     */
+    public function getOptions(): array
     {
         return $this->options;
     }

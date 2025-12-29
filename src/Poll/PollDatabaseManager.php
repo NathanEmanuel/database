@@ -4,7 +4,6 @@ namespace Compucie\Database\Poll;
 
 use Compucie\Database\DatabaseManager;
 use Compucie\Database\Poll\Model\Option;
-use Compucie\Database\Poll\Model\Options;
 use Compucie\Database\Poll\Model\Poll;
 use Compucie\Database\Poll\Model\Vote;
 use DateTime;
@@ -118,7 +117,6 @@ class PollDatabaseManager extends DatabaseManager
         }
 
         $options            = $this->getOptions($pollId);
-        $optionsVoteCounted = $this->getVoteCounts($pollId, $options);
         $pollVoteCount      = $this->getPollVoteCount($pollId);
 
         return new Poll(
@@ -126,7 +124,7 @@ class PollDatabaseManager extends DatabaseManager
             (string)$row['question'],
             safeDateTime((string)$row['published_at']),
             safeDateTime((string)$row['expires_at']),
-            $optionsVoteCounted,
+            $options,
             $pollVoteCount
         );
     }
@@ -390,13 +388,13 @@ class PollDatabaseManager extends DatabaseManager
     /**
      * Return the options for the given poll.
      * @param   int     $pollId     ID of the poll for which to get the options.
-     * @return  Options             Object with the options.
+     * @return  array<Option>       Object with the options.
      * @throws  mysqli_sql_exception
      */
-    public function getOptions(int $pollId): Options
+    public function getOptions(int $pollId): array
     {
         if ($pollId <= 0) {
-            return new Options();
+            return array();
         }
 
         $rows = $this->executeReadAll(
@@ -407,13 +405,16 @@ class PollDatabaseManager extends DatabaseManager
             "i"
         );
 
-        $options = new Options();
+        $options = array();
 
         foreach ($rows as $row) {
-            $options->setText(
-                (int)$row['option_id'],
-                (string)$row['text']
+            $option = new Option(
+                $row['option_id'],
+                $pollId,
+                $row['text'],
+                $this->getVotes($row['option_id'])
             );
+            $options[] = $option;
         }
 
         return $options;
@@ -446,39 +447,6 @@ class PollDatabaseManager extends DatabaseManager
     public function deleteOption(int $optionId): bool
     {
         return $this->executeDelete('options', 'option_id', $optionId);
-    }
-
-    /**
-     * Return the options and the vote count for each option.
-     * The value is another array that contains the option text and the vote count.
-     * @param   int         $pollId     ID of the poll for which to get the vote counts.
-     * @param   Options     $options    Object with the options.
-     * @return  Options                 Object with the options and their vote counts.
-     * @throws  mysqli_sql_exception
-     */
-    private function getVoteCounts(int $pollId, Options $options): Options
-    {
-        $rows = $this->executeReadAll(
-            "SELECT `option_id`, COUNT(*) AS cnt
-         FROM `votes`
-         WHERE `poll_id` = ?
-         GROUP BY `option_id`",
-            [$pollId],
-            "i"
-        );
-
-        foreach ($options->getIds() as $optionId) {
-            $options->setVoteCount($optionId, 0);
-        }
-
-        foreach ($rows as $row) {
-            $options->setVoteCount(
-                (int)$row['option_id'],
-                (int)$row['cnt']
-            );
-        }
-
-        return $options;
     }
 
     /* ------------- VOTES ------------- */
