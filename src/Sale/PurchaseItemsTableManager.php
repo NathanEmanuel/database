@@ -12,7 +12,7 @@ trait PurchaseItemsTableManager
     protected function createPurchaseItemsTable(): void
     {
         $statement = $this->getClient()->prepare(
-            "CREATE TABLE `purchase_items` (
+            "CREATE TABLE IF NOT EXISTS `purchase_items` (
                 `purchase_item_id` INT NOT NULL UNIQUE AUTO_INCREMENT,
                 `purchase_id` INT NOT NULL,
                 `product_id` INT NOT NULL,
