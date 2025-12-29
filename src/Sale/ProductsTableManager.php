@@ -4,6 +4,8 @@ namespace Compucie\Database\Sale;
 
 use Compucie\Database\Sale\Model\Product;
 use mysqli;
+use mysqli_sql_exception;
+use Throwable;
 
 trait ProductsTableManager
 {
@@ -19,33 +21,60 @@ trait ProductsTableManager
                 PRIMARY KEY (product_id)
             );"
         );
-        $statement->execute();
-        $statement->close();
+        if ($statement) {
+            $statement->execute();
+            $statement->close();
+        }
     }
 
     /**
      * @param Product[] $products
+     * @throws Throwable
+     * @throws mysqli_sql_exception
      */
     public function updateProductsTable(array $products): void
     {
-        $statement = $this->getClient()->prepare(
-            "INSERT INTO products (product_id, product_name, unit_price)
-            VALUES (?, ?, ?)
-            ON DUPLICATE KEY UPDATE
-            product_name = VALUES(product_name),
-            unit_price = VALUES(unit_price);
-            "
-        );
+        if ($products === []) {
+            return;
+        }
 
-        foreach ($products as $product) {
-            $unitPriceCents = $product->getUnitPriceCents() / 100;
-            $statement->bind_param(
-                "isd",
-                $product->getId(),
-                $product->getName(),
-                $unitPriceCents,
-            );
-            $statement->execute();
+        $sql = "
+        INSERT INTO `products` (`product_id`, `product_name`, `unit_price`)
+        VALUES (?, ?, ?)
+        ON DUPLICATE KEY UPDATE
+            `product_name` = VALUES(`product_name`),
+            `unit_price` = VALUES(`unit_price`)
+        ";
+
+        $client = $this->getClient();
+        $statement = $client->prepare($sql);
+        if ($statement === false) {
+            throw new mysqli_sql_exception($client->error);
+        }
+
+        $client->begin_transaction();
+
+        try {
+            foreach ($products as $product) {
+                $unitPrice = $product->getUnitPriceCents() / 100;
+
+                $id = $product->getId();
+                $name = $product->getName();
+                $statement->bind_param(
+                    'isd',
+                    $id,
+                    $name,
+                    $unitPrice
+                );
+
+                $statement->execute();
+            }
+
+            $client->commit();
+        } catch (Throwable $e) {
+            $client->rollback();
+            $statement->close();
+            throw $e;
         }
 
         $statement->close();

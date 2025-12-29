@@ -3,11 +3,13 @@
 namespace Compucie\DatabaseTest;
 
 use Compucie\Database\Sale\Exceptions\WeekDoesNotExistException;
+use Compucie\Database\Sale\Model\Product;
 use DateInterval;
 use DateTime;
 use Exception;
 use PHPUnit\Framework\TestCase;
 
+use Throwable;
 use function PHPUnit\Framework\assertNotNull;
 use function PHPUnit\Framework\assertSame;
 
@@ -240,6 +242,9 @@ class SaleDatabaseManagerTest extends TestCase
         assertSame(3, $productSales->getQuantityByWeek(2, $week, $currentYear));
     }
 
+    /**
+     * @throws Throwable
+     */
     public function testUpdateProductTable(): void
     {
         $products = [
@@ -247,12 +252,27 @@ class SaleDatabaseManagerTest extends TestCase
             new Product(2, "Product 2", 420),
             new Product(3, "Product 3"),
         ];
-        $this->getDbm()->updateProductsTable($products);
+        $this->dbm->updateProductsTable($products);
+        assertSame(1, $this->dbh->rowCount(
+            'products', 'product_id = 1 AND product_name = "Product 1" AND unit_price = 0.99')
+        );
+        assertSame(1, $this->dbh->rowCount(
+            'products', 'product_id = 2 AND product_name = "Product 2" AND unit_price = 4.20')
+        );
+        assertSame(1, $this->dbh->rowCount(
+            'products', 'product_id = 3 AND product_name = "Product 3" AND unit_price = 0.00')
+        );
 
         $products = [
             new Product(2, "Product 2", 67),
             new Product(4, "Product 4", 0),
         ];
-        $this->getDbm()->updateProductsTable($products);
+        $this->dbm->updateProductsTable($products);
+        assertSame(1, $this->dbh->rowCount(
+            'products', 'product_id = 2 AND product_name = "Product 2" AND unit_price = 0.67')
+        );
+        assertSame(1, $this->dbh->rowCount(
+            'products', 'product_id = 4 AND product_name = "Product 4" AND unit_price = 0.00')
+        );
     }
 }
