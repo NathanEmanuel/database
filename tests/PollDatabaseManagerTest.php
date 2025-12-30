@@ -288,11 +288,11 @@ class PollDatabaseManagerTest extends TestCase
 //        echo $poll->getExpiresAt()->format('Y-m-d H:i:s');
         assertSame($date1->format('Y-m-d H:i:s'), $poll->getExpiresAt()->format('Y-m-d H:i:s'));
         $options = $poll->getOptions();
-        assertSame(2, count($options->getIds()));
-        assertSame($option1, $options->getText(1));
-        assertSame(2, $options->getVoteCount(1));
-        assertSame($option2, $options->getText(2));
-        assertSame(1, $options->getVoteCount(2));
+        assertSame(2, count($options));
+        assertSame($option1, $options[0]->getText());
+        assertSame(2, $options[0]->getVoteCount());
+        assertSame($option2, $options[1]->getText());
+        assertSame(1, $options[1]->getVoteCount());
         assertSame(3, $poll->getVoteCount());
     }
 
